@@ -1,4 +1,6 @@
-# ripcord-audio-hook
+# ripcord-community-fix
+*(formerly known as `ripcord-audio-hook`)*
+
 Fixes Ripcord:
 1. not connecting <sup>due to the binary ETF parser aborting upon discovering invalid/unhandled map keys</sup>
 2. having garbled audio in voice channels <sup>due to reading RTP header extensions larger than 8 bytes as voice data</sup>
