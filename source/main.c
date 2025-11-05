@@ -20,6 +20,11 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
 #define Proxy(name) Func_##name = GetProcAddress(lib_handle, #name);
 #include "proxied.inc"
 #undef  Proxy
+        DisableThreadLibraryCalls(lib_handle);
+        AllocConsole();
+        freopen("CONIN$", "rb", stdin);
+        freopen("CONOUT$", "wb", stdout);
+        freopen("CONOUT$", "wb", stderr);
 		return LoadHooks();
 	} else if (reason == DLL_PROCESS_DETACH) {
 		FreeLibrary(lib_handle);

@@ -3,12 +3,13 @@
 
 Fixes Ripcord:
 1. not connecting <sup>due to the binary ETF parser aborting upon discovering invalid/unhandled map keys</sup>
-2. having garbled audio in voice channels <sup>due to reading RTP header extensions larger than 8 bytes as voice data</sup>
-3. getting stuck on "Routing..." when attempting to join voice channels <sup>due to sending and receiving an old (?) version of the IP discovery packet</sup>
-4. failing to connect to voice channels <sup>due to creating malformed WebSocket gateway URIs</sup>
-5. not ordering servers in the sidebar correctly <sup>due to the addition of folders</sup>
-6. not loading image previews
-7. not showing "Stage" voice channels  
+2. lacking support for new encryption modes, causing it to fail to connect to voice channels
+3. having garbled audio in voice channels <sup>due to reading RTP header extensions larger than 8 bytes as voice data</sup>
+4. getting stuck on "Routing..." when attempting to join voice channels <sup>due to sending and receiving an old (?) version of the IP discovery packet</sup>
+5. failing to connect to voice channels <sup>due to creating malformed WebSocket gateway URIs</sup>
+6. not ordering servers in the sidebar correctly <sup>due to the addition of folders</sup>
+7. not loading image previews
+8. not showing "Stage" voice channels  
    *(This is accomplished by making Ripcord think stages are regular voice channels. This means that there is no way to become a speaker, and no way to differentiate a stage from a regular voice channel)*
 
 Supports Ripcord 0.4.29 on Windows. [Supports Ripcord 0.4.29 on Linux, albeit with limited testing.](https://github.com/geniiii/ripcord-audio-hook/tree/linux)
