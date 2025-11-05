@@ -49,6 +49,9 @@ typedef DISVLWORKER_CONSTRUCTOR(DisVLWorkerConstructorType);
 #define EMPTY_VOICE_PACKET_SEND(name) void name(DisVLWorker** this)
 typedef EMPTY_VOICE_PACKET_SEND(EmptyVoicePacketSendType);
 
+#define DISVOICEENCODE_CREATEENCODINGCONTEXT(name) DisVoiceEncode_EncodingContext* name(void* this, u8 forceMusicSignal)
+typedef DISVOICEENCODE_CREATEENCODINGCONTEXT(DisVoiceEncodeCreateEncodingContextType);
+
 static VoiceDataAppendType*          voice_data_append;
 static ErfMapFindType*               erf_map_find;
 static ErfArrAtType*                 erf_arr_at;
@@ -63,6 +66,7 @@ static DisDbPreparedEndtxType*       disdbprepared_endtx;
 static SetVoiceEncStringsType*       set_voice_enc_strings;
 static ReadVoiceDataPacketType*      read_voice_data_packet;
 static SendSpeakingStateType*        send_speaking_state;
-static SendVoiceDatagramType*        send_voice_datagram;
-static DisVLWorkerConstructorType*   disvlworker_constructor;
-static EmptyVoicePacketSendType*      empty_voice_packet_send;
+static SendVoiceDatagramType*                   send_voice_datagram;
+static DisVLWorkerConstructorType*              disvlworker_constructor;
+static EmptyVoicePacketSendType*                empty_voice_packet_send;
+static DisVoiceEncodeCreateEncodingContextType* disvoiceencode_createencodingcontext;

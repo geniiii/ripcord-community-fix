@@ -217,4 +217,15 @@ typedef struct {
     DisVoiceLinePriv* priv;
 } DisVoiceLine;
 static_assert(sizeof(DisVoiceLine) == 0x18);
+
+typedef struct {
+    void* opusEncoder;
+    f32*  audioBuffer;
+    u64   audioBufferContentSize;
+    u64   audioBufferCapacity;
+    u32   timestamp;
+    u32   silentPackets;
+} DisVoiceEncode_EncodingContext;
+static_assert(sizeof(DisVoiceEncode_EncodingContext) == 0x28);
+
 #pragma pack(pop)

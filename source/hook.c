@@ -107,6 +107,12 @@ static ERF_MAP_FIND(ErfMapFindHook) {
     return result;
 }
 
+static DISVOICEENCODE_CREATEENCODINGCONTEXT(DisVoiceEncodeCreateEncodingContextHook) {
+    DisVoiceEncode_EncodingContext* context = disvoiceencode_createencodingcontext(this, forceMusicSignal);
+    context->timestamp                      = rand();
+    return context;
+}
+
 // NOTE(geni): Not really necessary at the moment, but we have to prepare for future voice protocol updates
 static SEND_SPEAKING_STATE(SendSpeakingStateHook) {
     void* webSocket = this->priv->vlWorker->webSocket;
@@ -444,6 +450,17 @@ static u32 LoadHooks() {
     PatchByte(rip_base, 0xDE90C, 8);
     PatchByte(rip_base, 0xDE936, 72);
 
+    // NOTE(geni): Set voice gateway version to 7
+    PatchByte(rip_base, 0x3CDEB4 + 0x1200, '7');
+    // NOTE(geni): Patch "speaking" field check for v4 and later of voice gateway
+    // NOTE(geni): Check for double instead of bool for "speaking" field
+    PatchByte(rip_base, 0xE605C + 0xC00, 0x83);
+    PatchByte(rip_base, 0xE605C + 0xC00 + 1, 0xF8);
+    PatchByte(rip_base, 0xE605C + 0xC00 + 2, 0x02);
+    // NOTE(geni): Call QJsonValue::toInt() instead of QJsonValue::toBool()
+    PatchByte(rip_base, 0xE6067 + 0xC00 + 2, 0x03);
+    PatchByte(rip_base, 0xE6067 + 0xC00 + 3, 0x76);
+
     // NOTE(geni): Fixes image previews not loading. Thanks u130b8!
     PatchString(rip_base, 0x3E63F8, S8Lit("cdn.discordapp.com/\0\0\0"));
 
@@ -472,6 +489,7 @@ static u32 LoadHooks() {
     result &= CreateAndEnableHook(0, read_datagram_addr, (LPVOID) &ReadDatagramHook, (LPVOID*) &read_datagram);
     result &= CreateAndEnableHook(rip_base, 0xE15B0 + 0xC00, (LPVOID) &SendSpeakingStateHook, (LPVOID*) &send_speaking_state);
     result &= CreateAndEnableHook(rip_base, 0xCA6E0 + 0xC00, (LPVOID) &EmptyVoicePacketSendHook, (LPVOID*) &empty_voice_packet_send);
+    result &= CreateAndEnableHook(rip_base, 0x149900 + 0xC00, (LPVOID) &DisVoiceEncodeCreateEncodingContextHook, (LPVOID*) &disvoiceencode_createencodingcontext);
 
     voice_data_append         = (VoiceDataAppendType*) (rip_base + 0xD0DF0);
     disdbprepared_begintx     = (DisDbPreparedBegintxType*) (rip_base + 0xF62E0);
