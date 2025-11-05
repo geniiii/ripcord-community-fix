@@ -504,9 +504,6 @@ static u32 LoadHooks() {
 
     crypto_aead_xchacha20poly1305_ietf_decrypt = (CryptoAeadXchacha20poly1305IetfDecryptType*) GetProcAddress(sodium, "crypto_aead_xchacha20poly1305_ietf_decrypt");
     crypto_aead_xchacha20poly1305_ietf_encrypt = (CryptoAeadXchacha20poly1305IetfEncryptType*) GetProcAddress(sodium, "crypto_aead_xchacha20poly1305_ietf_encrypt");
-    crypto_secretbox_easy                      = (CryptoSecretboxEasyType*) GetProcAddress(sodium, "crypto_secretbox_easy");
-    crypto_secretbox_open_easy                 = (CryptoSecretboxOpenEasyType*) GetProcAddress(sodium, "crypto_secretbox_open_easy");
-    randombytes_buf                            = (RandombytesBufType*) GetProcAddress(sodium, "randombytes_buf");
 
     return result;
 }
