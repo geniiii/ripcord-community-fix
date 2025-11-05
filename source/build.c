@@ -23,6 +23,7 @@
 #include <Windows.h>
 #include <Psapi.h>
 #include <Shlwapi.h>
+#include <Ntsecapi.h>
 #include "ext/minhook/MinHook.c"
 #include <stdint.h>
 #include <stdio.h>

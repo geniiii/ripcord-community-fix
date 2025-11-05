@@ -109,7 +109,7 @@ static ERF_MAP_FIND(ErfMapFindHook) {
 
 static DISVOICEENCODE_CREATEENCODINGCONTEXT(DisVoiceEncodeCreateEncodingContextHook) {
     DisVoiceEncode_EncodingContext* context = disvoiceencode_createencodingcontext(this, forceMusicSignal);
-    context->timestamp                      = rand();
+    RtlGenRandom(&context->timestamp, sizeof context->timestamp);
     return context;
 }
 
@@ -330,8 +330,8 @@ static DISVLWORKER_CONSTRUCTOR(DisVLWorkerConstructorHook) {
     //             The nonce is an incrementing integer, so we have to initialize it
     this->COMMUNITY_FIX_nonce = 0;
     // NOTE(geni): Our implementation doesn't call realloc
-    this->sendPacketBuffer     = malloc(2048);
-    this->sendPacketBufferSize = 2048;
+    this->sendPacketBuffer     = malloc(512);
+    this->sendPacketBufferSize = 512;
     return this;
 }
 
