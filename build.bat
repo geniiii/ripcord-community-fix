@@ -18,7 +18,7 @@ if "%VSCMD_ARG_TGT_ARCH%" neq "x64" (
 )
 
 set compiler=cl.exe
-set build_type=debug
+set build_type=release
 set arch=x64
 
 set build_options= /D_CRT_SECURE_NO_WARNINGS

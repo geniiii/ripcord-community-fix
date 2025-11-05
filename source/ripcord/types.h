@@ -31,21 +31,21 @@ typedef enum {
 typedef struct {
     i32         length;
     const char* data;
-    u8          padding[4];
+    Pad(4);
 } ErfStr;
 static_assert(sizeof(ErfStr) == 0x10);
 
 typedef struct {
     void* addr;
     i32   count;
-    u8    padding[4];
+    Pad(4);
 } ErfMap;
 static_assert(sizeof(ErfMap) == 0x10);
 
 typedef struct {
     void* addr;
     i32   count;
-    u8    padding[4];
+    Pad(4);
 } ErfArr;
 static_assert(sizeof(ErfArr) == 0x10);
 
@@ -56,7 +56,7 @@ static_assert(sizeof(RipStmt) == 0x8);
 
 typedef struct {
     ErfTag tag;
-    u8     padding[4];
+    Pad(4);
     union {
         u8     boolean;
         i32    int32;
@@ -72,8 +72,8 @@ static_assert(sizeof(ErfMapAny) == 0x18);
 
 typedef struct
 {
-    int     txCount;
-    u8      padding[4];
+    int txCount;
+    Pad(4);
     RipStmt stmt_beginTx;
     RipStmt stmt_endTx;
     RipStmt replaceIntoGuild;
@@ -162,15 +162,15 @@ typedef struct
 static_assert(sizeof(VoiceDatasAccum) == 0x30);
 
 typedef struct {
-    u8              _unk[0x10];
-    u8              parentVoiceLine[0x10];
-    void*           webSocket;
-    void*           heartbeatTimer;
-    u8              connParams[0x30];
-    void*           udpSocket;
-    void*           emptyVoicePacketsTimer;
-    u16             emptyVoicePacketsSent;
-    u8              padding[6];
+    u8    _unk[0x10];
+    u8    parentVoiceLine[0x10];
+    void* webSocket;
+    void* heartbeatTimer;
+    u8    connParams[0x30];
+    void* udpSocket;
+    void* emptyVoicePacketsTimer;
+    u16   emptyVoicePacketsSent;
+    Pad(6);
     u8*             packetBuffer;
     u64             packetBufferSize;
     u8*             sendPacketBuffer;
@@ -178,10 +178,10 @@ typedef struct {
     VoiceDatasAccum voiceDatasAccum;
     u32             ssrc;
     u16             serverPort;
-    u8              padding1[2];
-    QString         serverAddress;
-    u8              serverModes[8];
-    u32             encMode;
+    Pad(2);
+    QString serverAddress;
+    u8      serverModes[8];
+    u32     encMode;
 
     // NOTE(geni): Stealing padding for nonce :^)
     u32 COMMUNITY_FIX_nonce;
@@ -190,18 +190,19 @@ typedef struct {
     QString discoveredAddress;
     u16     discoveredPort;
     u16     sequence;
-    u8      padding3[4];
+    Pad(4);
 } DisVLWorker;
 static_assert(sizeof(DisVLWorker) == 0x100);
 
 typedef struct {
     void*        networkThread;
     DisVLWorker* vlWorker;
-    // NOTE(geni): Don't care about these
-    u8      voiceSinksMutex[8];
-    u8      voiceSinks[8];
-    u32     stateType;
-    u8      padding[4];
+
+    // NOTE(geni): Actually an atomic variable :troll:
+    void*            voiceSinksMutex;
+    QTypedArrayData* voiceSinks;
+    u32              stateType;
+    Pad(4);
     u64     userId;
     u64     guildId;
     u64     channelId;
@@ -212,7 +213,7 @@ typedef struct {
 static_assert(sizeof(DisVoiceLinePriv) == 0x58);
 
 typedef struct {
-    u8                padding[0x10];
+    Pad(0x10);
     DisVoiceLinePriv* priv;
 } DisVoiceLine;
 static_assert(sizeof(DisVoiceLine) == 0x18);

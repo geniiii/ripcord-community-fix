@@ -324,8 +324,8 @@ static DISVLWORKER_CONSTRUCTOR(DisVLWorkerConstructorHook) {
     //             The nonce is an incrementing integer, so we have to initialize it
     this->COMMUNITY_FIX_nonce = 0;
     // NOTE(geni): Our implementation doesn't call realloc
-    this->sendPacketBuffer     = malloc(4096);
-    this->sendPacketBufferSize = 4096;
+    this->sendPacketBuffer     = malloc(2048);
+    this->sendPacketBufferSize = 2048;
     return this;
 }
 

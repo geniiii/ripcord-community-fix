@@ -34,7 +34,7 @@ static_assert(sizeof(QJsonObject) == 0x10);
 typedef struct {
     QJsonObject* o;
     int          i;
-    u8           padding[4];
+    Pad(4);
 } QJsonObject_iterator;
 static_assert(sizeof(QJsonObject_iterator) == 0x10);
 
@@ -43,7 +43,7 @@ typedef struct {
 
     i32  size;
     i32  alloc;
-    u32  _padding;
+    Pad(4);
     uptr offset;
 } QTypedArrayData;
 static_assert(sizeof(QTypedArrayData) == 0x18);

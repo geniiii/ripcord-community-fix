@@ -26,6 +26,7 @@
 #include "ext/minhook/MinHook.c"
 #include <stdint.h>
 #include <stdio.h>
+#include <assert.h>
 
 typedef int8_t    i8;
 typedef int16_t   i16;
@@ -39,9 +40,9 @@ typedef float     f32;
 typedef double    f64;
 typedef uintptr_t uptr;
 
-#define CONCAT_IMPL(x, y) x##y
-#define MACRO_CONCAT(x, y) CONCAT_IMPL(x, y)
-#define PAD(SIZE) u8 MACRO_CONCAT(_pad, __COUNTER__)[SIZE];
+#define MacroConcatImpl(x, y) x##y
+#define MacroConcat(x, y) MacroConcatImpl(x, y)
+#define Pad(size) u8 MacroConcat(_pad, __COUNTER__)[size]
 #define Unreferenced(x) (void) x
 
 #define HIJACKED_DLL      "winmm.dll"
