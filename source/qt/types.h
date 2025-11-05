@@ -1,3 +1,4 @@
+#pragma pack(push, 1)
 typedef struct QJsonPrivate_Data  QJsonPrivate_Data;
 typedef struct QJsonPrivate_Array QJsonPrivate_Array;
 
@@ -22,6 +23,7 @@ typedef struct {
     u64                u0;
     QJsonPrivate_Data* d;
     QJsonValue_Type    t;
+    Pad(4);
 } QJsonValue;
 static_assert(sizeof(QJsonValue) == 0x18);
 
@@ -59,13 +61,17 @@ void* QTypedArrayData_data(QTypedArrayData* array) {
 
 typedef struct {
     u32         size;
+    Pad(4);
     const char* data;
 } QLatin1String;
+static_assert(sizeof(QLatin1String) == 0x10);
 #define QLatin1StringLit(s) (QLatin1String) QLatin1StringComp(s)
 #define QLatin1StringComp(s) \
-    {sizeof(s) - 1, s}
+{.size = sizeof(s) - 1, .data = s}
 
 typedef struct {
     void* d;
 } QHostAddress;
 static_assert(sizeof(QHostAddress) == 0x8);
+
+#pragma pack(pop)
