@@ -1,3 +1,4 @@
+#pragma pack(push, 1)
 typedef enum {
     ErfTag_Nil,
     ErfTag_Bool,
@@ -14,6 +15,7 @@ typedef union {
     u64 u;
     i64 i;
 } FlakeId;
+static_assert(sizeof(FlakeId) == 0x8);
 
 typedef enum {
     DisChannelType_Unknown,
@@ -26,27 +28,35 @@ typedef enum {
     DisChannelType_GuildVoiceStage = 13,
 } DisChannelType;
 
-__declspec(align(8)) typedef struct {
+typedef struct {
     i32         length;
     const char* data;
+    u8          padding[4];
 } ErfStr;
+static_assert(sizeof(ErfStr) == 0x10);
 
-__declspec(align(8)) typedef struct {
+typedef struct {
     void* addr;
     i32   count;
+    u8    padding[4];
 } ErfMap;
+static_assert(sizeof(ErfMap) == 0x10);
 
-__declspec(align(8)) typedef struct {
+typedef struct {
     void* addr;
     i32   count;
+    u8    padding[4];
 } ErfArr;
+static_assert(sizeof(ErfArr) == 0x10);
 
 typedef struct {
     void* sqlite3_stmt;
 } RipStmt;
+static_assert(sizeof(RipStmt) == 0x8);
 
 typedef struct {
     ErfTag tag;
+    u8     padding[4];
     union {
         u8     boolean;
         i32    int32;
@@ -58,10 +68,12 @@ typedef struct {
         ErfMap map;
     };
 } ErfMapAny;
+static_assert(sizeof(ErfMapAny) == 0x18);
 
 typedef struct
 {
     int     txCount;
+    u8      padding[4];
     RipStmt stmt_beginTx;
     RipStmt stmt_endTx;
     RipStmt replaceIntoGuild;
@@ -204,3 +216,4 @@ typedef struct {
     DisVoiceLinePriv* priv;
 } DisVoiceLine;
 static_assert(sizeof(DisVoiceLine) == 0x18);
+#pragma pack(pop)

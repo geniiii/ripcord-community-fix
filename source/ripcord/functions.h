@@ -43,7 +43,7 @@ typedef SEND_SPEAKING_STATE(SendSpeakingStateType);
 #define SEND_VOICE_DATAGRAM(name) void name(DisVoiceLine* this, u8* data, u64 dataSize, u32 timestamp)
 typedef SEND_VOICE_DATAGRAM(SendVoiceDatagramType);
 
-#define DISVLWORKER_CONSTRUCTOR(name) void name(DisVLWorker* this, void* parent)
+#define DISVLWORKER_CONSTRUCTOR(name) DisVLWorker* name(DisVLWorker* this, void* parent)
 typedef DISVLWORKER_CONSTRUCTOR(DisVLWorkerConstructorType);
 
 #define EMPTY_VOICE_PACKET_SEND(name) void name(DisVLWorker** this)

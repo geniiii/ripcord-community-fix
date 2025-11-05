@@ -18,6 +18,7 @@ static READ_DATAGRAM(ReadDatagramHook) {
     if (size == 74) {
         i64 result = read_datagram(this, data, size, address, port);
         // NOTE(geni): Swap port endianness
+        //             I wanted to just put a rol instruction after the movzx that reads it, but there was no space
         if (data[1] == 2 && data[3] == 70) {
             u8 temp  = data[72];
             data[72] = data[73];
@@ -325,6 +326,7 @@ static DISVLWORKER_CONSTRUCTOR(DisVLWorkerConstructorHook) {
     // NOTE(geni): Our implementation doesn't call realloc
     this->sendPacketBuffer     = malloc(4096);
     this->sendPacketBufferSize = 4096;
+    return this;
 }
 
 static READVOICEDATAPACKET_WITHENCRYPTIONMODE(ReadVoiceDataPacketHook) {
