@@ -16,9 +16,10 @@ Supports Ripcord 0.4.29 on Windows. [Supports Ripcord 0.4.29 on Linux, albeit wi
 
 ## Usage
 Download the DLL file from [the Releases page](https://github.com/geniiii/ripcord-audio-hook/releases) and place it in your Ripcord directory, or watch the video below if you don't understand:  
-<a href="https://www.youtube.com/watch?v=KwhXPrJ05Rw"><img src="https://github.com/user-attachments/assets/16c1caf4-0f1c-4c98-9c31-ffc916504717" width=640px></a>
+<a href="https://www.youtube.com/watch?v=MY1-YvD1vzg"><img src="https://github.com/user-attachments/assets/ff60fb35-733c-4faf-a681-ff84ca458fa7" width=640px></a>
 
 ## Building
+
 ### If you don't know what you're doing, look at the Usage section above instead.
 1. Install Visual Studio 2019 or newer with the C++ development tools
 2. Run `build.bat`
