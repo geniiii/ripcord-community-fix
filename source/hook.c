@@ -29,10 +29,6 @@ static READ_DATAGRAM(ReadDatagramHook) {
     return read_datagram(this, data, size, address, port);
 }
 
-enum {
-    RTP_PACKET_TYPE_VOICE = 0x78,
-};
-
 // NOTE(geni): The current maximum on Discord's side is 200 so we'll be fine
 static u64 guilds[512];
 static u32 guilds_count;
@@ -68,17 +64,19 @@ static UPDATEUSERGUILDPOSITIONS(UpdateUserGuildPositionsHook) {
 }
 
 static ERF_MAP_FIND(ErfMapFindHook) {
-    u8 result = erf_map_find(map, key, key_size, out);
+    u8      result = erf_map_find(map, key, key_size, out);
+    String8 key_s8 = {
+        .s    = (u8*) key,
+        .size = key_size,
+    };
 
-    if (result && key_size == 4 &&
-        out->tag == ErfTag_Int32 && memcmp(key, "type", 4) == 0 &&
-        out->int32 == DisChannelType_GuildVoiceStage) {
+    if (result && S8Equals(key_s8, S8Lit("type")) &&
+        out->tag == ErfTag_Int32 && out->int32 == DisChannelType_GuildVoiceStage) {
         out->int32 = DisChannelType_GuildVoice;
     } else {
         ErfMapAny new_out = {.tag = ErfTag_Nil};
         // NOTE(geni): We can probably just check return address instead and it would probably be faster
-        if (map && key_size == 15 &&
-            memcmp(key, "guild_positions", 15) == 0 &&
+        if (map && S8Equals(key_s8, S8Lit("guild_positions")) &&
             erf_map_find(map, "guild_folders", 13, &new_out) &&
             new_out.tag == ErfTag_Arr) {
             ErfArr arr          = new_out.arr;
@@ -164,6 +162,219 @@ static SEND_SPEAKING_STATE(SendSpeakingStateHook) {
     qjsonobject_destructor(&root);
 }
 
+static void SendTextSync(void* webSocket, const char* text, i32 len) {
+    QString msg;
+    msg.d = qstring_from_ascii_helper(text, (i64) len);
+    qwebsocket_sendtextmessage(webSocket, &msg);
+    qstring_destructor(&msg);
+}
+
+static void SendVoiceIdentify(DisVLWorker* vc) {
+    void* webSocket = vc->webSocket;
+
+    u64 guildId   = vc->connGuildId;
+    u64 channelId = vc->connChannelId;
+    u64 userId    = vc->connUserId;
+    u64 serverId  = (guildId == (u64) -1) ? channelId : guildId;
+
+    QByteArray sid;
+    QByteArray tok;
+    qstring_toutf8(&vc->connSessionId, &sid);
+    qstring_toutf8(&vc->connToken, &tok);
+
+    // NOTE(geni): imma be real I don't care enough to use QJson for this
+    char json[1024];
+    i32  len = snprintf(json, sizeof(json),
+                        "{\"op\":0,\"d\":{\"server_id\":\"%llu\",\"user_id\":\"%llu\","
+                         "\"session_id\":\"%s\",\"token\":\"%s\",\"video\":true"
+                         "%s}}",
+                        serverId, userId,
+                        QByteArrayConstData(&sid), QByteArrayConstData(&tok),
+                        ",\"max_dave_protocol_version\":1");
+
+    qbytearray_destructor(&sid);
+    qbytearray_destructor(&tok);
+
+    SendTextSync(webSocket, json, len);
+    DebugMsg("Sent IDENTIFY: server_id=%llu user_id=%llu\n",
+             serverId, userId);
+}
+
+static VOICE_CONN_WS_CONNECTED(VoiceConnWSConnectedHook) {
+    g_dave.user_id    = vc->connUserId;
+    g_dave.channel_id = vc->connChannelId;
+    g_dave.webSocket  = vc->webSocket;
+    SendVoiceIdentify(vc);
+}
+
+typedef struct {
+    Pad(16);
+    DisVLWorker* vlWorker;
+} HeartbeatLambdaCapture;
+
+typedef void (*HeartbeatLambdaImplType)(i32 which, void* this_, void* r, void** a);
+static HeartbeatLambdaImplType heartbeat_lambda_impl;
+
+static void HeartbeatLambdaImplHook(i32 which, void* this_, void* r, void** a) {
+    if (which != 1) {
+        heartbeat_lambda_impl(which, this_, r, a);
+        return;
+    }
+
+    HeartbeatLambdaCapture* capture = (HeartbeatLambdaCapture*) this_;
+    DisVLWorker*            vw      = capture->vlWorker;
+    if (!vw->webSocket) {
+        return;
+    }
+
+    u64 now = qdatetime_currentmsecsinceepoch();
+
+    QJsonObject          root, d;
+    QJsonObject_iterator it;
+    QJsonValue           value;
+    QString              key;
+
+    qjsonobject_constructor(&root);
+    qjsonvalue_constructor_int(&value, 3);
+    key.d = qstring_from_ascii_helper("op", 2);
+    qjsonobject_insert(&root, &it, &key, &value);
+    qstring_destructor(&key);
+    qjsonvalue_destructor(&value);
+
+    qjsonobject_constructor(&d);
+    qjsonvalue_constructor_double(&value, (double) now);
+    key.d = qstring_from_ascii_helper("t", 1);
+    qjsonobject_insert(&d, &it, &key, &value);
+    qstring_destructor(&key);
+    qjsonvalue_destructor(&value);
+
+    qjsonvalue_constructor_int(&value, g_dave.last_seq);
+    key.d = qstring_from_ascii_helper("seq_ack", 7);
+    qjsonobject_insert(&d, &it, &key, &value);
+    qstring_destructor(&key);
+    qjsonvalue_destructor(&value);
+
+    qjsonvalue_constructor_qjsonobject(&value, &d);
+    key.d = qstring_from_ascii_helper("d", 1);
+    qjsonobject_insert(&root, &it, &key, &value);
+    qstring_destructor(&key);
+    qjsonvalue_destructor(&value);
+
+    websockethelpers_sendjson(vw->webSocket, qjsonvalue_constructor_qjsonobject(&value, &root));
+    qjsonobject_destructor(&d);
+    qjsonobject_destructor(&root);
+}
+
+static VOICE_CONN_TEXT_MSG_RECEIVED(VoiceConnTextMsgReceivedHook) {
+    char      json[4096];
+    jsmntok_t tokens[128];
+
+    QByteArray text_utf8;
+    qstring_toutf8(text, &text_utf8);
+
+    jsmn_parser parser;
+    jsmn_init(&parser);
+    i32 ntokens = jsmn_parse(&parser, QByteArrayConstData(&text_utf8), QByteArraySize(&text_utf8), tokens, ArrayCount(tokens));
+    if (ntokens < 1 || tokens[0].type != JSMN_OBJECT) {
+        voice_conn_text_msg_received(vw, text);
+        goto cleanup;
+    }
+
+    i32 op  = JsmnInt(json, tokens, (u32) ntokens, 0, S8Lit("op"), -1);
+    i32 seq = JsmnInt(json, tokens, (u32) ntokens, 0, S8Lit("seq"), -1);
+    i32 d   = JsmnFind(json, tokens, (u32) ntokens, 0, S8Lit("d"));
+
+    if (seq >= 0) {
+        g_dave.last_seq = seq;
+    }
+
+    switch (op) {
+        case VOICE_OP_READY: {
+            voice_conn_text_msg_received(vw, text);
+            g_dave.local_ssrc = vw->ssrc;
+            if (g_dave.encryptor) {
+                daveEncryptorAssignSsrcToCodec(g_dave.encryptor, vw->ssrc, DAVE_CODEC_OPUS);
+            }
+        } break;
+
+        case VOICE_OP_SESSION_DESCRIPTION: {
+            voice_conn_text_msg_received(vw, text);
+            if (d >= 0) {
+                i32 dave_ver = JsmnInt(json, tokens, (u32) ntokens, d, S8Lit("dave_protocol_version"), 0);
+                if (dave_ver > 0) {
+                    DaveInit((u16) dave_ver);
+                }
+            }
+        } break;
+
+        case VOICE_OP_SPEAKING: {
+            voice_conn_text_msg_received(vw, text);
+            // NOTE(geni): Speaking events are our only source of ssrc->userId mappings
+            if (d >= 0) {
+                char    user_id_buf[32];
+                String8 user_id = JsmnStr(json, tokens, (u32) ntokens, d, S8Lit("user_id"), user_id_buf, sizeof(user_id_buf));
+                i32     ssrc    = JsmnInt(json, tokens, (u32) ntokens, d, S8Lit("ssrc"), 0);
+                if (user_id.size > 0 && ssrc != 0) {
+                    u64 uid = (u64) strtoull(user_id.cstr, NULL, 10);
+                    DaveAddSsrcMapping((u32) ssrc, uid);
+                    DaveAddConnectedUser(uid);
+                    DaveApplyKeyRatchetForSsrc((u32) ssrc, uid);
+                }
+            }
+        } break;
+
+        case VOICE_OP_PREPARE_TRANSITION: {
+            // NOTE(geni): Actual stuff arrives over the binary WS (ANNOUNCE_COMMIT/WELCOME)
+            if (d >= 0) {
+                i32 proto_ver                   = JsmnInt(json, tokens, (u32) ntokens, d, S8Lit("protocol_version"), 0);
+                i32 transition_id               = JsmnInt(json, tokens, (u32) ntokens, d, S8Lit("transition_id"), 0);
+                g_dave.pending_protocol_version = (u16) proto_ver;
+                DaveSendJson1Int(g_dave.webSocket, VOICE_OP_READY_FOR_TRANSITION,
+                                 S8Lit("transition_id"), transition_id);
+            }
+        } break;
+
+        case VOICE_OP_EXECUTE_TRANSITION: {
+            if (d >= 0) {
+                if (g_dave.pending_protocol_version != g_dave.protocol_version) {
+                    g_dave.protocol_version = g_dave.pending_protocol_version;
+                    if (g_dave.protocol_version == 0) {
+                        // NOTE(geni): The server downgraded us off DAVE
+                        g_dave.dave_enabled    = 0;
+                        g_dave.dave_downgraded = 1;
+                        break;
+                    }
+                }
+
+                if (!g_dave.pending_transition_ready) {
+                    DaveReinit();
+                    break;
+                }
+
+                DaveCompleteTransition();
+            }
+        } break;
+
+        case VOICE_OP_PREPARE_EPOCH: {
+            // NOTE(geni): Initial group formation
+            if (d >= 0) {
+                i32 proto_ver = JsmnInt(json, tokens, (u32) ntokens, d, S8Lit("protocol_version"), 0);
+                i32 epoch     = JsmnInt(json, tokens, (u32) ntokens, d, S8Lit("epoch"), 0);
+                if (epoch == 1) {
+                    g_dave.protocol_version = (u16) proto_ver;
+                    DaveReinit();
+                }
+            }
+        } break;
+
+        default: {
+            voice_conn_text_msg_received(vw, text);
+        } break;
+    }
+cleanup:
+    qbytearray_destructor(&text_utf8);
+}
+
 static SETVOICEENCSTRINGS(SetVoiceEncStringsHook) {
     // NOTE(geni): Lie about our encryption support to get Ripcord to connect
 
@@ -176,7 +387,7 @@ static SETVOICEENCSTRINGS(SetVoiceEncStringsHook) {
     return arr;
 }
 
-void send_voice_data(u32* noncePtr, void* udpSocket, u8* buffer, u32 encMode, u8* secretKey, QString* hostName, u16 port, u32 ssrc, u16* seq, u8* data, u64 dataSize, u32 timestamp) {
+void SendVoiceData(u32* noncePtr, void* udpSocket, u8* buffer, u32 encMode, u8* secretKey, QString* hostName, u16 port, u32 ssrc, u16* seq, u8* data, u64 dataSize, u32 timestamp) {
     if (!secretKey || !hostName->d->size) {
         return;
     }
@@ -186,7 +397,7 @@ void send_voice_data(u32* noncePtr, void* udpSocket, u8* buffer, u32 encMode, u8
     buffer[1] = RTP_PACKET_TYPE_VOICE;
     buffer[2] = (*seq) >> 8;
     buffer[3] = (*seq) & 0xFF;
-    (*seq)++;
+    ++(*seq);
 
     buffer[4] = (u8) (timestamp >> 24);
     buffer[5] = (u8) (timestamp >> 16);
@@ -197,6 +408,23 @@ void send_voice_data(u32* noncePtr, void* udpSocket, u8* buffer, u32 encMode, u8
     buffer[9]  = (u8) (ssrc >> 16);
     buffer[10] = (u8) (ssrc >> 8);
     buffer[11] = ssrc & 0xFF;
+
+    const u8* encrypt_payload = data;
+    u64       encrypt_size    = dataSize;
+    u8        dave_buf[4096];
+
+    if (g_dave.dave_enabled && g_dave.encryptor) {
+        size_t written = 0;
+        i32    result  = daveEncryptorEncrypt(g_dave.encryptor, DAVE_MEDIA_TYPE_AUDIO, ssrc,
+                                              data, (size_t) dataSize, dave_buf, sizeof(dave_buf), &written);
+        if (result == DAVE_ENCRYPTOR_RESULT_CODE_SUCCESS) {
+            encrypt_payload = dave_buf;
+            encrypt_size    = (u64) written;
+        } else {
+            ErrorMessage("DAVE encrypt failed: result=%d", result);
+            return;
+        }
+    }
 
     u64 packet_size;
     switch (encMode) {
@@ -209,13 +437,14 @@ void send_voice_data(u32* noncePtr, void* udpSocket, u8* buffer, u32 encMode, u8
             nonce[3]        = nonce_value & 0xFF;
 
             u64 encrypted_len;
-            if (crypto_aead_xchacha20poly1305_ietf_encrypt(
-                    buffer + 12, &encrypted_len,
-                    data, dataSize,
-                    buffer, 12,
-                    NULL,
-                    nonce, secretKey)) {
-                ErrorMessage("Failed to encrypt voice data");
+            i32 result = crypto_aead_xchacha20poly1305_ietf_encrypt(
+                buffer + 12, &encrypted_len,
+                encrypt_payload, encrypt_size,
+                buffer, 12,
+                NULL,
+                nonce, secretKey);
+            if (result) {
+                ErrorMessage("Failed to encrypt voice data: result=%d", result);
                 return;
             }
 
@@ -283,12 +512,12 @@ static void EmptyVoicePacketSendHook(DisVLWorker** vlWorkerPtr) {
         qjsonobject_destructor(&d);
         qjsonobject_destructor(&root);
     }
-    vlWorker->emptyVoicePacketsSent++;
+    ++vlWorker->emptyVoicePacketsSent;
 
     u8  silence_packet[3] = {0xF8, 0xFF, 0xFE};
     u64 timestamp         = qdatetime_currentmsecsinceepoch();
 
-    send_voice_data(
+    SendVoiceData(
         &vlWorker->COMMUNITY_FIX_nonce,
         vlWorker->udpSocket,
         vlWorker->sendPacketBuffer,
@@ -309,7 +538,7 @@ static SEND_VOICE_DATAGRAM(SendVoiceDatagramHook) {
         return;
     }
 
-    send_voice_data(
+    SendVoiceData(
         &vlWorker->COMMUNITY_FIX_nonce,
         vlWorker->udpSocket,
         vlWorker->sendPacketBuffer,
@@ -330,8 +559,32 @@ static DISVLWORKER_CONSTRUCTOR(DisVLWorkerConstructorHook) {
     //             The nonce is an incrementing integer, so we have to initialize it
     this->COMMUNITY_FIX_nonce = 0;
     // NOTE(geni): Our implementation doesn't call realloc
-    this->sendPacketBuffer     = malloc(512);
-    this->sendPacketBufferSize = 512;
+    this->sendPacketBuffer     = malloc(2048);
+    this->sendPacketBufferSize = 2048;
+
+    DaveReset();
+
+    // NOTE(geni): Hellspawn
+    if (g_binary_msg_signal_fn && qobject_connectimpl) {
+        DaveBinarySlotObject* slot = (DaveBinarySlotObject*) malloc(sizeof(DaveBinarySlotObject));
+        slot->m_ref                = 1;
+        slot->_pad                 = 0;
+        slot->m_impl               = (void*) DaveBinarySlotImpl;
+        slot->user_data            = this;
+
+        u8 conn_retval[8];
+        qobject_connectimpl(
+            conn_retval,
+            this->webSocket,
+            &g_binary_msg_signal_fn,
+            this,
+            NULL,
+            slot,
+            0,
+            NULL,
+            g_qwebsocket_static_meta);
+    }
+
     return this;
 }
 
@@ -384,7 +637,35 @@ static READVOICEDATAPACKET_WITHENCRYPTIONMODE(ReadVoiceDataPacketHook) {
 
             // NOTE(geni): Ripcord expects full first byte instead of just version
             // NOTE(geni): Hardcode "version" to 80 so Ripcord doesn't apply its evil processing to it
-            voice_data_append(voiceAccum, decrypted + data_offset, decrypted_len - data_offset, 0x80, sequence, timestamp, ssrc);
+            u8* final_data = decrypted + data_offset;
+            u64 final_len  = decrypted_len - data_offset;
+
+            if (!g_dave.dave_enabled) {
+                voice_data_append(voiceAccum, final_data, final_len, 0x80, sequence, timestamp, ssrc);
+                break;
+            }
+
+            // NOTE(geni): Silence frames are not DAVE-encrypted
+            if (final_len == 3 && final_data[0] == 0xF8 &&
+                final_data[1] == 0xFF && final_data[2] == 0xFE) {
+                voice_data_append(voiceAccum, final_data, final_len, 0x80, sequence, timestamp, ssrc);
+                break;
+            }
+
+            u64   uid = DaveLookupUserId(ssrc);
+            void* dec = DaveGetOrCreateDecryptor(ssrc, uid);
+            if (!dec) {
+                break;
+            }
+
+            u8     dave_plain[4096];
+            size_t written = 0;
+            i32    result  = daveDecryptorDecrypt(dec, DAVE_MEDIA_TYPE_AUDIO,
+                                                  final_data, (size_t) final_len,
+                                                  dave_plain, sizeof(dave_plain), &written);
+            if (result == DAVE_DECRYPTOR_RESULT_CODE_SUCCESS) {
+                voice_data_append(voiceAccum, dave_plain, (u64) written, 0x80, sequence, timestamp, ssrc);
+            }
         } break;
         default: {
             // NOTE(geni): Just append it as-is for now, since that's what Ripcord originally did lol
@@ -450,8 +731,8 @@ static u32 LoadHooks() {
     PatchByte(rip_base, 0xDE90C, 8);
     PatchByte(rip_base, 0xDE936, 72);
 
-    // NOTE(geni): Set voice gateway version to 7
-    PatchByte(rip_base, 0x3CDEB4 + 0x1200, '7');
+    // NOTE(geni): Set voice gateway version to 8
+    PatchByte(rip_base, 0x3CDEB4 + 0x1200, '8');
     // NOTE(geni): Patch "speaking" field check for v4 and later of voice gateway
     // NOTE(geni): Check for double instead of bool for "speaking" field
     PatchByte(rip_base, 0xE605C + 0xC00, 0x83);
@@ -471,9 +752,10 @@ static u32 LoadHooks() {
     // NOTE(geni): Disable gateway port splitting
     PatchByte(rip_base, 0xD677E, 0x10);
 
-    HMODULE qt5core    = GetModuleHandleA("Qt5Core.dll");
-    HMODULE qt5network = GetModuleHandleA("Qt5Network.dll");
-    HMODULE sodium     = GetModuleHandleA("libsodium.dll");
+    HMODULE qt5core       = GetModuleHandleA("Qt5Core.dll");
+    HMODULE qt5network    = GetModuleHandleA("Qt5Network.dll");
+    HMODULE sodium        = GetModuleHandleA("libsodium.dll");
+    HMODULE qt5websockets = GetModuleHandleA("Qt5WebSockets.dll");
 
     u64 read_datagram_addr  = (u64) GetProcAddress(qt5network, "?readDatagram@QUdpSocket@@QEAA_JPEAD_JPEAVQHostAddress@@PEAG@Z");
     u64 write_datagram_addr = (u64) GetProcAddress(qt5network, "?writeDatagram@QUdpSocket@@QEAA_JPEBD_JAEBVQHostAddress@@G@Z");
@@ -490,6 +772,9 @@ static u32 LoadHooks() {
     result &= CreateAndEnableHook(rip_base, 0xE15B0 + 0xC00, (LPVOID) &SendSpeakingStateHook, (LPVOID*) &send_speaking_state);
     result &= CreateAndEnableHook(rip_base, 0xCA6E0 + 0xC00, (LPVOID) &EmptyVoicePacketSendHook, (LPVOID*) &empty_voice_packet_send);
     result &= CreateAndEnableHook(rip_base, 0x149900 + 0xC00, (LPVOID) &DisVoiceEncodeCreateEncodingContextHook, (LPVOID*) &disvoiceencode_createencodingcontext);
+    result &= CreateAndEnableHook(rip_base, 0xE6280 + 0xC00, (LPVOID) &VoiceConnWSConnectedHook, (LPVOID*) &voice_conn_ws_connected);
+    result &= CreateAndEnableHook(rip_base, 0xE5160 + 0xC00, (LPVOID) &VoiceConnTextMsgReceivedHook, (LPVOID*) &voice_conn_text_msg_received);
+    result &= CreateAndEnableHook(rip_base, 0xD4C20 + 0xC00, (LPVOID) &HeartbeatLambdaImplHook, (LPVOID*) &heartbeat_lambda_impl);
 
     voice_data_append         = (VoiceDataAppendType*) (rip_base + 0xD0DF0);
     disdbprepared_begintx     = (DisDbPreparedBegintxType*) (rip_base + 0xF62E0);
@@ -504,14 +789,14 @@ static u32 LoadHooks() {
 
     qstring_destructor        = (QStringDestructorType*) GetProcAddress(qt5core, "??1QString@@QEAA@XZ");
     qstring_from_ascii_helper = (QStringFromAsciiHelperType*) GetProcAddress(qt5core, "?fromAscii_helper@QString@@CAPEAU?$QTypedArrayData@G@@PEBDH@Z");
+    qstring_toutf8            = (QStringToUtf8Type*) GetProcAddress(qt5core, "?toUtf8@QString@@QEGBA?AVQByteArray@@XZ");
 
-    qstring_set_from_cstring              = (QStringSetFromCStringType*) GetProcAddress(qt5core, "??4QString@@QEAAAEAV0@PEBD@Z");
     qstring_set_from_qlatin1string        = (QStringSetFromQLatin1StringType*) GetProcAddress(qt5core, "??4QString@@QEAAAEAV0@VQLatin1String@@@Z");
     qhostaddress_constructor_from_qstring = (QHostAddressConstructorFromQStringType*) GetProcAddress(qt5network, "??0QHostAddress@@QEAA@AEBVQString@@@Z");
     qhostaddress_destructor               = (QHostAddressDestructorType*) GetProcAddress(qt5network, "??1QHostAddress@@QEAA@XZ");
 
-    qjsonvalue_constructor_bool        = (QJsonValueConstructorBoolType*) GetProcAddress(qt5core, "??0QJsonValue@@QEAA@_N@Z");
     qjsonvalue_constructor_int         = (QJsonValueConstructorIntType*) GetProcAddress(qt5core, "??0QJsonValue@@QEAA@H@Z");
+    qjsonvalue_constructor_double      = (QJsonValueConstructorDoubleType*) GetProcAddress(qt5core, "??0QJsonValue@@QEAA@N@Z");
     qjsonvalue_constructor_qjsonobject = (QJsonValueConstructorQJsonObjectType*) GetProcAddress(qt5core, "??0QJsonValue@@QEAA@AEBVQJsonObject@@@Z");
     qjsonvalue_destructor              = (QJsonValueDestructorType*) GetProcAddress(qt5core, "??1QJsonValue@@QEAA@XZ");
     qjsonobject_insert                 = (QJsonObjectInsertType*) GetProcAddress(qt5core, "?insert@QJsonObject@@QEAA?AViterator@1@AEBVQString@@AEBVQJsonValue@@@Z");
@@ -522,6 +807,22 @@ static u32 LoadHooks() {
 
     crypto_aead_xchacha20poly1305_ietf_decrypt = (CryptoAeadXchacha20poly1305IetfDecryptType*) GetProcAddress(sodium, "crypto_aead_xchacha20poly1305_ietf_decrypt");
     crypto_aead_xchacha20poly1305_ietf_encrypt = (CryptoAeadXchacha20poly1305IetfEncryptType*) GetProcAddress(sodium, "crypto_aead_xchacha20poly1305_ietf_encrypt");
+
+    qbytearray_constructor = (QByteArrayConstructorType*) GetProcAddress(qt5core, "??0QByteArray@@QEAA@PEBDH@Z");
+    qbytearray_destructor  = (QByteArrayDestructorType*) GetProcAddress(qt5core, "??1QByteArray@@QEAA@XZ");
+    qobject_connectimpl    = (QObjectConnectImplType*) GetProcAddress(qt5core,
+                                                                      "?connectImpl@QObject@@CA?AVConnection@QMetaObject@@"
+                                                                         "PEBV1@PEAPEAX01PEAVQSlotObjectBase@QtPrivate@@"
+                                                                         "W4ConnectionType@Qt@@PEBHPEBU3@@Z");
+
+    qwebsocket_sendbinarymessage = (QWebSocketSendBinaryMessageType*) GetProcAddress(qt5websockets,
+                                                                                     "?sendBinaryMessage@QWebSocket@@QEAA_JAEBVQByteArray@@@Z");
+    g_binary_msg_signal_fn       = (void*) GetProcAddress(qt5websockets,
+                                                          "?binaryMessageReceived@QWebSocket@@QEAAXAEBVQByteArray@@@Z");
+    g_qwebsocket_static_meta     = (void*) GetProcAddress(qt5websockets,
+                                                          "?staticMetaObject@QWebSocket@@2UQMetaObject@@B");
+    qwebsocket_sendtextmessage   = (QWebSocketSendTextMessageType*) GetProcAddress(qt5websockets,
+                                                                                   "?sendTextMessage@QWebSocket@@QEAA_JAEBVQString@@@Z");
 
     return result;
 }

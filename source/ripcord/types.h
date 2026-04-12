@@ -72,7 +72,7 @@ static_assert(sizeof(ErfMapAny) == 0x18);
 
 typedef struct
 {
-    int txCount;
+    i32 txCount;
     Pad(4);
     RipStmt stmt_beginTx;
     RipStmt stmt_endTx;
@@ -162,14 +162,19 @@ typedef struct
 static_assert(sizeof(VoiceDatasAccum) == 0x30);
 
 typedef struct {
-    u8    _unk[0x10];
-    u8    parentVoiceLine[0x10];
-    void* webSocket;
-    void* heartbeatTimer;
-    u8    connParams[0x30];
-    void* udpSocket;
-    void* emptyVoicePacketsTimer;
-    u16   emptyVoicePacketsSent;
+    u8      _unk[0x10];
+    u8      parentVoiceLine[0x10];
+    void*   webSocket;
+    void*   heartbeatTimer;
+    u64     connUserId;
+    u64     connGuildId;
+    u64     connChannelId;
+    QString connSessionId;
+    QString connToken;
+    QString connEndpoint;
+    void*   udpSocket;
+    void*   emptyVoicePacketsTimer;
+    u16     emptyVoicePacketsSent;
     Pad(6);
     u8*             packetBuffer;
     u64             packetBufferSize;
@@ -227,5 +232,19 @@ typedef struct {
     u32   silentPackets;
 } DisVoiceEncode_EncodingContext;
 static_assert(sizeof(DisVoiceEncode_EncodingContext) == 0x28);
+
+enum {
+    VOICE_OP_IDENTIFY             = 0,
+    VOICE_OP_READY                = 2,
+    VOICE_OP_SESSION_DESCRIPTION  = 4,
+    VOICE_OP_SPEAKING             = 5,
+    VOICE_OP_HEARTBEAT_ACK        = 6,
+    VOICE_OP_HELLO                = 8,
+    VOICE_OP_PREPARE_TRANSITION   = 21,
+    VOICE_OP_EXECUTE_TRANSITION   = 22,
+    VOICE_OP_READY_FOR_TRANSITION = 23,
+    VOICE_OP_PREPARE_EPOCH        = 24,
+    RTP_PACKET_TYPE_VOICE         = 0x78,
+};
 
 #pragma pack(pop)

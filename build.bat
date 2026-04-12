@@ -1,14 +1,36 @@
 @echo off
-
 setlocal EnableDelayedExpansion
+
+set compiler=cl.exe
+set build_type=release
+set arch=x64
+set build_options=/D_CRT_SECURE_NO_WARNINGS
+
+if /i "%build_type%"=="debug" (
+    set CMAKE_CONFIG=Debug
+    set CMAKE_RUNTIME=MultiThreadedDebug
+    set MSVC_RUNTIME=/MTd
+    set LINK_DEBUG=/Debug:full
+    set VCPKG_LIB_DIR=../source/ext/libdave/cpp/build_Debug/vcpkg_installed/x64-windows-static/debug/lib
+) else (
+    set CMAKE_CONFIG=Release
+    set CMAKE_RUNTIME=MultiThreaded
+    set MSVC_RUNTIME=/MT /O2
+    set LINK_DEBUG=/Debug:none
+    set VCPKG_LIB_DIR=../source/ext/libdave/cpp/build_Release/vcpkg_installed/x64-windows-static/lib
+)
+
+set DAVE_DIR=source\ext\libdave\cpp
+set DAVE_BUILD_DIR=%DAVE_DIR%\build_%CMAKE_CONFIG%
+set DAVE_LIB_PATH=%DAVE_BUILD_DIR%\libdave.lib
 
 where /Q cl.exe || (
   set __VSCMD_ARG_NO_LOGO=1
-  for /f "tokens=*" %%i in ('"C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -prerelease -requires Microsoft.VisualStudio.Workload.NativeDesktop -property installationPath') do set VS=%%i
-  if "!VS!" equ "" (
-	echo ERROR: Visual Studio installation not found
-	exit /b 1
-  )  
+  for /f "tokens=*" %%i in ('"C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -prerelease -requires Microsoft.VisualStudio.Workload.NativeDesktop -property installationPath') do set "VS=%%i"
+  if not defined VS (
+    echo ERROR: Visual Studio installation not found
+    exit /b 1
+  )
   call "!VS!\VC\Auxiliary\Build\vcvarsall.bat" x64 || exit /b 1
 )
 
@@ -17,38 +39,53 @@ if "%VSCMD_ARG_TGT_ARCH%" neq "x64" (
   exit /b 1
 )
 
-set compiler=cl.exe
-set build_type=release
-set arch=x64
 
-set build_options= /D_CRT_SECURE_NO_WARNINGS
+if not exist "%DAVE_LIB_PATH%" (
+  echo Building libdave in %CMAKE_CONFIG% mode...
+  pushd "%DAVE_DIR%"
+
+  if not exist vcpkg\bootstrap-vcpkg.bat git submodule update --init vcpkg || exit /b 1
+  if not exist vcpkg\vcpkg.exe call vcpkg\bootstrap-vcpkg.bat -disableMetrics || exit /b 1
+
+  cmake -B "build_%CMAKE_CONFIG%" -G "NMake Makefiles" ^
+    -DCMAKE_BUILD_TYPE=%CMAKE_CONFIG% ^
+    -DBUILD_SHARED_LIBS=OFF ^
+    -DCMAKE_C_COMPILER=cl ^
+    -DCMAKE_CXX_COMPILER=cl ^
+    -DVCPKG_MANIFEST_DIR="!CD!\vcpkg-alts\openssl_3" ^
+    -DCMAKE_TOOLCHAIN_FILE="!CD!\vcpkg\scripts\buildsystems\vcpkg.cmake" ^
+    -DVCPKG_TARGET_TRIPLET=x64-windows-static ^
+    -DVCPKG_TARGET_ARCHITECTURE=x86_64 ^
+    -DCMAKE_MSVC_RUNTIME_LIBRARY=%CMAKE_RUNTIME% || exit /b 1
+
+  cmake --build "build_%CMAKE_CONFIG%" --target libdave --config %CMAKE_CONFIG% || exit /b 1
+  popd
+)
+
 
 if "%compiler%"=="clang-cl.exe" (
-	set external_flag=/imsvc
+    set external_flag=/imsvc
 ) else (
-	set external_flag=/external:I
+    set external_flag=/external:I
 )
+
 set external_includes= %external_flag% ../source/ext/
 set common_compile_flags= /utf-8 /TC /Zc:__STDC__ /std:clatest /nologo /Zi /FC /W4 /GR- /EHsc /I ../source/ %external_includes%
-if "%build_type%"=="debug" (
-	set compile_flags=%common_compile_flags% /MD
-) else (
-	set compile_flags=%common_compile_flags% /MD /O2
-)
+
+set compile_flags=%common_compile_flags% %MSVC_RUNTIME%
+
 if "%compiler%"=="clang-cl.exe" (
-	set compile_flags=%compile_flags% -Wno-missing-braces -Wno-unused-function -Wno-missing-declarations -fdiagnostics-absolute-paths -fuse-ld=lld-link
+    set compile_flags=%compile_flags% -Wno-missing-braces -Wno-unused-function -Wno-missing-declarations -fdiagnostics-absolute-paths -fuse-ld=lld-link
 ) else (
-	set compile_flags=%compile_flags% /experimental:external /external:W0
+    set compile_flags=%compile_flags% /experimental:external /external:W0
 )
 
-set common_link_flags=User32.lib Advapi32.lib Shlwapi.lib Psapi.lib -opt:ref
-if "%build_type%"=="debug" (
-	set link_flags=%common_link_flags% /Debug:full
-) else (
-	set link_flags=%common_link_flags% /Debug:none
-)
+set common_link_flags=User32.lib Advapi32.lib Shlwapi.lib Psapi.lib Crypt32.lib Ws2_32.lib Bcrypt.lib /LIBPATH:"%VCPKG_LIB_DIR%" mlspp.lib tls_syntax.lib bytes.lib hpke.lib libssl.lib libcrypto.lib ../%DAVE_LIB_PATH:\=/% -opt:ref
+set link_flags=%common_link_flags% %LINK_DEBUG%
 
 if not exist build mkdir build
 pushd build
+
+echo Compiling winmm.dll in %build_type% mode...
 %compiler% %build_options% %compile_flags% ../source/build.c /LD /link %link_flags% /DEF:../source/winmm.def /out:winmm.dll
 popd

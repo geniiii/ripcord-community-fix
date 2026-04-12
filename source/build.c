@@ -3,7 +3,6 @@
 #define NOHELP
 #define NOPROFILER
 #define NOGDICAPMASKS
-#define NOATOM
 #define NOSERVICE
 #define NOMETAFILE
 #define NOMINMAX
@@ -42,19 +41,28 @@ typedef double    f64;
 typedef uintptr_t uptr;
 
 #define MacroConcatImpl(x, y) x##y
-#define MacroConcat(x, y) MacroConcatImpl(x, y)
-#define Pad(size) u8 MacroConcat(_pad, __COUNTER__)[size]
-#define Unreferenced(x) (void) x
+#define MacroConcat(x, y)     MacroConcatImpl(x, y)
+#define Pad(size)             u8 MacroConcat(_pad, __COUNTER__)[size]
+#define Unreferenced(x)       (void) x
+#define ArrayCount(a)         (sizeof(a) / sizeof((a)[0]))
 
-#define HIJACKED_DLL      "winmm.dll"
-#define SUPPORTED_VERSION "0.4.29"
+#define HIJACKED_DLL          "winmm.dll"
+#define SUPPORTED_VERSION     "0.4.29"
 
-#include "util.c"
+#define JSMN_STATIC
+#include "ext/jsmn.h"
 #include "string8.c"
+#include "util.c"
 #include "qt/types.h"
 #include "qt/functions.h"
 #include "ripcord/types.h"
 #include "ripcord/functions.h"
 #include "sodium.h"
+#include "dave.h"
+#include "dave_state.c"
+#include "dave_send.c"
+#include "dave_session.c"
+#include "dave_crypto.c"
+#include "dave_mls.c"
 #include "hook.c"
 #include "main.c"

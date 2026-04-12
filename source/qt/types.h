@@ -35,7 +35,7 @@ static_assert(sizeof(QJsonObject) == 0x10);
 
 typedef struct {
     QJsonObject* o;
-    int          i;
+    i32          i;
     Pad(4);
 } QJsonObject_iterator;
 static_assert(sizeof(QJsonObject_iterator) == 0x10);
@@ -43,8 +43,8 @@ static_assert(sizeof(QJsonObject_iterator) == 0x10);
 typedef struct {
     i32 ref_count;
 
-    i32  size;
-    i32  alloc;
+    i32 size;
+    i32 alloc;
     Pad(4);
     uptr offset;
 } QTypedArrayData;
@@ -55,23 +55,36 @@ typedef struct {
 } QString;
 static_assert(sizeof(QString) == 0x8);
 
-void* QTypedArrayData_data(QTypedArrayData* array) {
+void* QTypedArrayDataData(QTypedArrayData* array) {
     return (void*) ((uptr) array + array->offset);
 }
 
 typedef struct {
-    u32         size;
+    u32 size;
     Pad(4);
     const char* data;
 } QLatin1String;
 static_assert(sizeof(QLatin1String) == 0x10);
 #define QLatin1StringLit(s) (QLatin1String) QLatin1StringComp(s)
 #define QLatin1StringComp(s) \
-{.size = sizeof(s) - 1, .data = s}
+    {.size = sizeof(s) - 1, .data = s}
 
 typedef struct {
     void* d;
 } QHostAddress;
 static_assert(sizeof(QHostAddress) == 0x8);
+
+typedef struct {
+    QTypedArrayData* d;
+} QByteArray;
+static_assert(sizeof(QByteArray) == 0x8);
+
+static const char* QByteArrayConstData(const QByteArray* ba) {
+    return (const char*) QTypedArrayDataData(ba->d);
+}
+
+static i32 QByteArraySize(const QByteArray* ba) {
+    return ba->d->size;
+}
 
 #pragma pack(pop)

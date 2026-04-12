@@ -10,13 +10,13 @@ typedef ERF_ARR_AT(ErfArrAtType);
 #define UPDATEUSERGUILDPOSITIONS(name) void name(DisDbPrepared* comStmts, FlakeId userId, ErfArr* guildPosList)
 typedef UPDATEUSERGUILDPOSITIONS(UpdateUserGuildPositionsType);
 
-#define RIPSTMT_CONSTRUCTOR(name) void name(RipStmt* this, void* db, const char* sql, int* errcode)
+#define RIPSTMT_CONSTRUCTOR(name) void name(RipStmt* this, void* db, const char* sql, i32* errcode)
 typedef RIPSTMT_CONSTRUCTOR(RipStmtConstructorType);
 
 #define RIPSTMT_DESTRUCTOR(name) void name(RipStmt* this)
 typedef RIPSTMT_DESTRUCTOR(RipStmtDestructorType);
 
-#define RIPSTMT_BIND_U64(name) void name(RipStmt* this, int index, u64 value)
+#define RIPSTMT_BIND_U64(name) void name(RipStmt* this, i32 index, u64 value)
 typedef RIPSTMT_BIND_U64(RipStmtBindU64Type);
 
 #define RIPSTMT_STEP(name) void name(RipStmt* this)
@@ -52,21 +52,29 @@ typedef EMPTY_VOICE_PACKET_SEND(EmptyVoicePacketSendType);
 #define DISVOICEENCODE_CREATEENCODINGCONTEXT(name) DisVoiceEncode_EncodingContext* name(void* this, u8 forceMusicSignal)
 typedef DISVOICEENCODE_CREATEENCODINGCONTEXT(DisVoiceEncodeCreateEncodingContextType);
 
-static VoiceDataAppendType*          voice_data_append;
-static ErfMapFindType*               erf_map_find;
-static ErfArrAtType*                 erf_arr_at;
-static UpdateUserGuildPositionsType* update_user_guild_positions;
-static RipStmtConstructorType*       ripstmt_constructor;
-static RipStmtDestructorType*        ripstmt_destructor;
-static RipStmtBindU64Type*           ripstmt_bind_u64;
-static RipStmtStepType*              ripstmt_step;
-static RipStmtResetType*             ripstmt_reset;
-static DisDbPreparedBegintxType*     disdbprepared_begintx;
-static DisDbPreparedEndtxType*       disdbprepared_endtx;
-static SetVoiceEncStringsType*       set_voice_enc_strings;
-static ReadVoiceDataPacketType*      read_voice_data_packet;
-static SendSpeakingStateType*        send_speaking_state;
+#define VOICE_CONN_WS_CONNECTED(name) void name(DisVLWorker* vc)
+typedef VOICE_CONN_WS_CONNECTED(VoiceConnWSConnectedType);
+
+#define VOICE_CONN_TEXT_MSG_RECEIVED(name) void name(DisVLWorker* vw, const QString* text)
+typedef VOICE_CONN_TEXT_MSG_RECEIVED(VoiceConnTextMsgReceivedType);
+
+static VoiceDataAppendType*                     voice_data_append;
+static ErfMapFindType*                          erf_map_find;
+static ErfArrAtType*                            erf_arr_at;
+static UpdateUserGuildPositionsType*            update_user_guild_positions;
+static RipStmtConstructorType*                  ripstmt_constructor;
+static RipStmtDestructorType*                   ripstmt_destructor;
+static RipStmtBindU64Type*                      ripstmt_bind_u64;
+static RipStmtStepType*                         ripstmt_step;
+static RipStmtResetType*                        ripstmt_reset;
+static DisDbPreparedBegintxType*                disdbprepared_begintx;
+static DisDbPreparedEndtxType*                  disdbprepared_endtx;
+static SetVoiceEncStringsType*                  set_voice_enc_strings;
+static ReadVoiceDataPacketType*                 read_voice_data_packet;
+static SendSpeakingStateType*                   send_speaking_state;
 static SendVoiceDatagramType*                   send_voice_datagram;
 static DisVLWorkerConstructorType*              disvlworker_constructor;
 static EmptyVoicePacketSendType*                empty_voice_packet_send;
 static DisVoiceEncodeCreateEncodingContextType* disvoiceencode_createencodingcontext;
+static VoiceConnWSConnectedType*                voice_conn_ws_connected;
+static VoiceConnTextMsgReceivedType*            voice_conn_text_msg_received;
