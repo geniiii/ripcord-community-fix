@@ -1,8 +1,8 @@
-#define DAVE_MAX_DECRYPTORS   256
-#define DAVE_MAX_SSRC_MAP     256
-#define DAVE_MAX_USERS        256
-#define DAVE_MEDIA_TYPE_AUDIO 0
-#define DAVE_CODEC_OPUS       1
+#define DAVE_MAX_DECRYPTORS                256
+#define DAVE_MAX_SSRC_MAP                  256
+#define DAVE_MAX_USERS                     256
+#define DAVE_MEDIA_TYPE_AUDIO              0
+#define DAVE_CODEC_OPUS                    1
 
 #define DAVE_ENCRYPTOR_RESULT_CODE_SUCCESS 0
 #define DAVE_DECRYPTOR_RESULT_CODE_SUCCESS 0
@@ -43,12 +43,17 @@ typedef struct {
     u8                 dave_enabled;
     u8                 dave_downgraded;
     u8                 pending_transition_ready;
+    u8                 pending_transition_executed;
     u32                local_ssrc;
     u64                channel_id;
     u64                user_id;
     void*              webSocket;
     i32                last_seq;
 } DaveState;
+
+global CRITICAL_SECTION g_dave_lock;
+#define DAVE_LOCK()   EnterCriticalSection(&g_dave_lock)
+#define DAVE_UNLOCK() LeaveCriticalSection(&g_dave_lock)
 
 #pragma pack(push, 1)
 typedef struct {

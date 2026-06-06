@@ -2,19 +2,25 @@ static void ErrorMessage(const char* fmt, ...) {
     char    buf[2048];
     va_list args;
     va_start(args, fmt);
-    vsnprintf(buf, sizeof(buf), fmt, args);
+    vsnprintf(buf, sizeof buf, fmt, args);
     va_end(args);
     MessageBoxA(0, buf, "Audio Hook Failure", MB_ICONERROR);
 }
 
 static void DebugMsg(const char* fmt, ...) {
+    // TODO(geni): I should've used Win32 but I was too lazy. Sorry!
+    time_t     t  = time(NULL);
+    struct tm* tm = localtime(&t);
+    char       time_buf[64];
+    i32        time_size = (i32) strftime(time_buf, sizeof time_buf, "%c", tm);
+
     char    buf[2048];
     va_list args;
     va_start(args, fmt);
-    vsnprintf(buf, sizeof(buf), fmt, args);
+    vsnprintf(buf, sizeof buf, fmt, args);
     va_end(args);
     OutputDebugStringA(buf);
-    fprintf(stderr, "%s", buf);
+    fprintf(stderr, "[%.*s] %s", time_size, time_buf, buf);
 }
 
 static u32 JsmnEq(const char* json, const jsmntok_t* tok, String8 s) {
@@ -85,20 +91,40 @@ static i32 JsmnInt(const char* json, const jsmntok_t* tokens, u32 count, i32 obj
     return neg ? -result : result;
 }
 
-static String8 JsmnStr(const char* json, const jsmntok_t* tokens, u32 count, i32 obj, String8 key, char* buf, u32 bufsize) {
+static u64 ParseU64FromCStr(const char* s, i32 len) {
+    u64 v = 0;
+    for (i32 i = 0; i < len && s[i] >= '0' && s[i] <= '9'; ++i) {
+        v = v * 10 + (u64) (s[i] - '0');
+    }
+    return v;
+}
+
+static u64 JsmnU64(const char* json, const jsmntok_t* tokens, u32 count, i32 obj, String8 key) {
     i32 vi = JsmnFind(json, tokens, count, obj, key);
-    if (vi < 0 || tokens[vi].type != JSMN_STRING) {
-        buf[0] = 0;
-        return (String8) {0};
+    if (vi < 0) {
+        return 0;
+    }
+    return ParseU64FromCStr(json + tokens[vi].start, tokens[vi].end - tokens[vi].start);
+}
+
+static u32 JsmnU64Array(const char* json, const jsmntok_t* tokens, u32 count, i32 obj, String8 key, u64* out, u32 max) {
+    i32 arr = JsmnFind(json, tokens, count, obj, key);
+    if (arr < 0 || tokens[arr].type != JSMN_ARRAY) {
+        return 0;
     }
 
-    i32 len = tokens[vi].end - tokens[vi].start;
-    if (len >= (i32) bufsize) {
-        len = (i32) bufsize - 1;
+    u32 n   = 0;
+    u32 idx = (u32) (arr + 1);
+    for (i32 i = 0; i < tokens[arr].size && n < max; ++i) {
+        if (idx >= count) {
+            break;
+        }
+        i32 len = tokens[idx].end - tokens[idx].start;
+        u64 v   = ParseU64FromCStr(json + tokens[idx].start, len);
+        if (v != 0) {
+            out[n++] = v;
+        }
+        idx = JsmnSkip(tokens, idx);
     }
-
-    memcpy(buf, json + tokens[vi].start, (u64) len);
-    buf[len] = 0;
-
-    return (String8) {(u8*) buf, (u64) len};
+    return n;
 }

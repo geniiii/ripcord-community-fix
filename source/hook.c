@@ -184,7 +184,7 @@ static void SendVoiceIdentify(DisVLWorker* vc) {
 
     // NOTE(geni): imma be real I don't care enough to use QJson for this
     char json[1024];
-    i32  len = snprintf(json, sizeof(json),
+    i32  len = snprintf(json, sizeof json,
                         "{\"op\":0,\"d\":{\"server_id\":\"%llu\",\"user_id\":\"%llu\","
                          "\"session_id\":\"%s\",\"token\":\"%s\",\"video\":true"
                          "%s}}",
@@ -266,15 +266,16 @@ static void HeartbeatLambdaImplHook(i32 which, void* this_, void* r, void** a) {
 }
 
 static VOICE_CONN_TEXT_MSG_RECEIVED(VoiceConnTextMsgReceivedHook) {
-    char      json[4096];
-    jsmntok_t tokens[128];
+    jsmntok_t tokens[256];
 
     QByteArray text_utf8;
     qstring_toutf8(text, &text_utf8);
+    const char* json     = QByteArrayConstData(&text_utf8);
+    i32         json_len = QByteArraySize(&text_utf8);
 
     jsmn_parser parser;
     jsmn_init(&parser);
-    i32 ntokens = jsmn_parse(&parser, QByteArrayConstData(&text_utf8), QByteArraySize(&text_utf8), tokens, ArrayCount(tokens));
+    i32 ntokens = jsmn_parse(&parser, json, (size_t) json_len, tokens, ArrayCount(tokens));
     if (ntokens < 1 || tokens[0].type != JSMN_OBJECT) {
         voice_conn_text_msg_received(vw, text);
         goto cleanup;
@@ -291,10 +292,12 @@ static VOICE_CONN_TEXT_MSG_RECEIVED(VoiceConnTextMsgReceivedHook) {
     switch (op) {
         case VOICE_OP_READY: {
             voice_conn_text_msg_received(vw, text);
+            DAVE_LOCK();
             g_dave.local_ssrc = vw->ssrc;
             if (g_dave.encryptor) {
                 daveEncryptorAssignSsrcToCodec(g_dave.encryptor, vw->ssrc, DAVE_CODEC_OPUS);
             }
+            DAVE_UNLOCK();
         } break;
 
         case VOICE_OP_SESSION_DESCRIPTION: {
@@ -311,14 +314,14 @@ static VOICE_CONN_TEXT_MSG_RECEIVED(VoiceConnTextMsgReceivedHook) {
             voice_conn_text_msg_received(vw, text);
             // NOTE(geni): Speaking events are our only source of ssrc->userId mappings
             if (d >= 0) {
-                char    user_id_buf[32];
-                String8 user_id = JsmnStr(json, tokens, (u32) ntokens, d, S8Lit("user_id"), user_id_buf, sizeof(user_id_buf));
-                i32     ssrc    = JsmnInt(json, tokens, (u32) ntokens, d, S8Lit("ssrc"), 0);
-                if (user_id.size > 0 && ssrc != 0) {
-                    u64 uid = (u64) strtoull(user_id.cstr, NULL, 10);
+                u64 uid  = JsmnU64(json, tokens, (u32) ntokens, d, S8Lit("user_id"));
+                i32 ssrc = JsmnInt(json, tokens, (u32) ntokens, d, S8Lit("ssrc"), 0);
+                if (uid != 0 && ssrc != 0) {
+                    DAVE_LOCK();
                     DaveAddSsrcMapping((u32) ssrc, uid);
                     DaveAddConnectedUser(uid);
                     DaveApplyKeyRatchetForSsrc((u32) ssrc, uid);
+                    DAVE_UNLOCK();
                 }
             }
         } break;
@@ -326,28 +329,44 @@ static VOICE_CONN_TEXT_MSG_RECEIVED(VoiceConnTextMsgReceivedHook) {
         case VOICE_OP_PREPARE_TRANSITION: {
             // NOTE(geni): Actual stuff arrives over the binary WS (ANNOUNCE_COMMIT/WELCOME)
             if (d >= 0) {
-                i32 proto_ver                   = JsmnInt(json, tokens, (u32) ntokens, d, S8Lit("protocol_version"), 0);
-                i32 transition_id               = JsmnInt(json, tokens, (u32) ntokens, d, S8Lit("transition_id"), 0);
-                g_dave.pending_protocol_version = (u16) proto_ver;
-                DaveSendJson1Int(g_dave.webSocket, VOICE_OP_READY_FOR_TRANSITION,
-                                 S8Lit("transition_id"), transition_id);
+                i32 proto_ver     = JsmnInt(json, tokens, (u32) ntokens, d, S8Lit("protocol_version"), 0);
+                i32 transition_id = JsmnInt(json, tokens, (u32) ntokens, d, S8Lit("transition_id"), 0);
+                DAVE_LOCK();
+                g_dave.pending_protocol_version    = (u16) proto_ver;
+                g_dave.pending_transition_id       = transition_id;
+                g_dave.pending_transition_ready    = 0;
+                g_dave.pending_transition_executed = 0;
+                DAVE_UNLOCK();
+                if (transition_id == 0) {
+                    DaveTransitionReady(transition_id);
+                } else {
+                    DaveSendJson1Int(g_dave.webSocket, VOICE_OP_READY_FOR_TRANSITION,
+                                     S8Lit("transition_id"), transition_id);
+                }
             }
         } break;
 
         case VOICE_OP_EXECUTE_TRANSITION: {
             if (d >= 0) {
+                i32 transition_id = JsmnInt(json, tokens, (u32) ntokens, d, S8Lit("transition_id"), 0);
+                DAVE_LOCK();
+                g_dave.pending_transition_id       = transition_id;
+                g_dave.pending_transition_executed = 1;
+
                 if (g_dave.pending_protocol_version != g_dave.protocol_version) {
                     g_dave.protocol_version = g_dave.pending_protocol_version;
                     if (g_dave.protocol_version == 0) {
                         // NOTE(geni): The server downgraded us off DAVE
                         g_dave.dave_enabled    = 0;
                         g_dave.dave_downgraded = 1;
+                        DAVE_UNLOCK();
                         break;
                     }
                 }
 
-                if (!g_dave.pending_transition_ready) {
-                    DaveReinit();
+                u8 ready = g_dave.pending_transition_ready;
+                DAVE_UNLOCK();
+                if (!ready) {
                     break;
                 }
 
@@ -356,13 +375,51 @@ static VOICE_CONN_TEXT_MSG_RECEIVED(VoiceConnTextMsgReceivedHook) {
         } break;
 
         case VOICE_OP_PREPARE_EPOCH: {
-            // NOTE(geni): Initial group formation
             if (d >= 0) {
-                i32 proto_ver = JsmnInt(json, tokens, (u32) ntokens, d, S8Lit("protocol_version"), 0);
-                i32 epoch     = JsmnInt(json, tokens, (u32) ntokens, d, S8Lit("epoch"), 0);
+                i32 proto_ver     = JsmnInt(json, tokens, (u32) ntokens, d, S8Lit("protocol_version"), 0);
+                i32 epoch         = JsmnInt(json, tokens, (u32) ntokens, d, S8Lit("epoch"), 0);
+                i32 transition_id = JsmnInt(json, tokens, (u32) ntokens, d, S8Lit("transition_id"), 0);
                 if (epoch == 1) {
-                    g_dave.protocol_version = (u16) proto_ver;
+                    // NOTE(geni): New MLS group
+                    DAVE_LOCK();
+                    g_dave.protocol_version         = (u16) proto_ver;
+                    g_dave.pending_protocol_version = (u16) proto_ver;
+                    g_dave.pending_transition_id    = transition_id;
+                    DAVE_UNLOCK();
                     DaveReinit();
+                } else {
+                    DAVE_LOCK();
+                    g_dave.pending_protocol_version    = (u16) proto_ver;
+                    g_dave.pending_transition_id       = transition_id;
+                    g_dave.pending_transition_ready    = 0;
+                    g_dave.pending_transition_executed = 0;
+                    DAVE_UNLOCK();
+                    DaveTransitionReady(transition_id);
+                }
+            }
+        } break;
+
+        case VOICE_OP_CLIENTS_CONNECT: {
+            if (d >= 0) {
+                u64 uids[DAVE_MAX_USERS];
+                u32 count = JsmnU64Array(json, tokens, (u32) ntokens, d, S8Lit("user_ids"), uids, ArrayCount(uids));
+                DAVE_LOCK();
+                for (u32 i = 0; i < count; ++i) {
+                    DaveAddConnectedUser(uids[i]);
+                }
+                DAVE_UNLOCK();
+            }
+            voice_conn_text_msg_received(vw, text);
+        } break;
+
+        case VOICE_OP_CLIENT_DISCONNECT: {
+            voice_conn_text_msg_received(vw, text);
+            if (d >= 0) {
+                u64 uid = JsmnU64(json, tokens, (u32) ntokens, d, S8Lit("user_id"));
+                if (uid != 0) {
+                    DAVE_LOCK();
+                    DaveRemoveConnectedUser(uid);
+                    DAVE_UNLOCK();
                 }
             }
         } break;
@@ -413,18 +470,21 @@ void SendVoiceData(u32* noncePtr, void* udpSocket, u8* buffer, u32 encMode, u8* 
     u64       encrypt_size    = dataSize;
     u8        dave_buf[4096];
 
+    DAVE_LOCK();
     if (g_dave.dave_enabled && g_dave.encryptor) {
         size_t written = 0;
         i32    result  = daveEncryptorEncrypt(g_dave.encryptor, DAVE_MEDIA_TYPE_AUDIO, ssrc,
-                                              data, (size_t) dataSize, dave_buf, sizeof(dave_buf), &written);
+                                              data, (size_t) dataSize, dave_buf, sizeof dave_buf, &written);
         if (result == DAVE_ENCRYPTOR_RESULT_CODE_SUCCESS) {
             encrypt_payload = dave_buf;
             encrypt_size    = (u64) written;
         } else {
-            ErrorMessage("DAVE encrypt failed: result=%d", result);
+            DAVE_UNLOCK();
+            DebugMsg("DAVE encrypt failed: result=%d", result);
             return;
         }
     }
+    DAVE_UNLOCK();
 
     u64 packet_size;
     switch (encMode) {
@@ -652,9 +712,11 @@ static READVOICEDATAPACKET_WITHENCRYPTIONMODE(ReadVoiceDataPacketHook) {
                 break;
             }
 
+            DAVE_LOCK();
             u64   uid = DaveLookupUserId(ssrc);
             void* dec = DaveGetOrCreateDecryptor(ssrc, uid);
             if (!dec) {
+                DAVE_UNLOCK();
                 break;
             }
 
@@ -662,7 +724,8 @@ static READVOICEDATAPACKET_WITHENCRYPTIONMODE(ReadVoiceDataPacketHook) {
             size_t written = 0;
             i32    result  = daveDecryptorDecrypt(dec, DAVE_MEDIA_TYPE_AUDIO,
                                                   final_data, (size_t) final_len,
-                                                  dave_plain, sizeof(dave_plain), &written);
+                                                  dave_plain, sizeof dave_plain, &written);
+            DAVE_UNLOCK();
             if (result == DAVE_DECRYPTOR_RESULT_CODE_SUCCESS) {
                 voice_data_append(voiceAccum, dave_plain, (u64) written, 0x80, sequence, timestamp, ssrc);
             }
@@ -709,6 +772,8 @@ static void PatchString(u8* base, u64 ptr, String8 new) {
 }
 
 static u32 LoadHooks() {
+    InitializeCriticalSection(&g_dave_lock);
+
     if (MH_Initialize() != MH_OK) {
         ErrorMessage("Failed to initialize MinHook");
         return 0;

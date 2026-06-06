@@ -4,7 +4,6 @@
 
 static HINSTANCE lib_handle;
 BOOL WINAPI      DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
-    (void) inst;
     (void) reserved;
 
     if (reason == DLL_PROCESS_ATTACH) {
@@ -21,12 +20,12 @@ BOOL WINAPI      DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
 #include "proxied.inc"
 #undef Proxy
 
+        DisableThreadLibraryCalls(inst);
 #if 0
-DisableThreadLibraryCalls(lib_handle);
-AllocConsole();
-freopen("CONIN$", "rb", stdin);
-freopen("CONOUT$", "wb", stdout);
-freopen("CONOUT$", "wb", stderr);
+        AllocConsole();
+        freopen("CONIN$", "rb", stdin);
+        freopen("CONOUT$", "wb", stdout);
+        freopen("CONOUT$", "wb", stderr);
 #endif
         return LoadHooks();
     } else if (reason == DLL_PROCESS_DETACH) {

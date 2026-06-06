@@ -1,4 +1,5 @@
 static DaveState g_dave;
+CRITICAL_SECTION g_dave_lock;
 
 static void* g_binary_msg_signal_fn;
 static void* g_qwebsocket_static_meta;
@@ -36,10 +37,19 @@ static void DaveAddConnectedUser(u64 userId) {
     }
 }
 
+static void DaveRemoveConnectedUser(u64 userId) {
+    for (u32 i = 0; i < g_dave.connected_user_count; ++i) {
+        if (g_dave.connected_user_ids[i] == userId) {
+            g_dave.connected_user_ids[i] = g_dave.connected_user_ids[--g_dave.connected_user_count];
+            return;
+        }
+    }
+}
+
 static u32 DaveBuildUserPtrs(const char** ptrs, char bufs[][32]) {
     for (u32 i = 0; i < g_dave.connected_user_count; ++i) {
-        S8FromU64(g_dave.connected_user_ids[i], bufs[i], 32);
-        ptrs[i] = bufs[i];
+        String8 uid = S8FromU64(g_dave.connected_user_ids[i], bufs[i], 32);
+        ptrs[i]     = uid.cstr;
     }
     return g_dave.connected_user_count;
 }

@@ -27,6 +27,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <assert.h>
+#include <time.h>
 
 typedef int8_t    i8;
 typedef int16_t   i16;
@@ -39,6 +40,8 @@ typedef uint64_t  u64;
 typedef float     f32;
 typedef double    f64;
 typedef uintptr_t uptr;
+
+#define global                static
 
 #define MacroConcatImpl(x, y) x##y
 #define MacroConcat(x, y)     MacroConcatImpl(x, y)

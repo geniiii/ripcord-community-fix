@@ -1,12 +1,18 @@
 static void HandleDaveExternalSender(u8* data, size_t len) {
+    DAVE_LOCK();
     if (!g_dave.session) {
-        return;
+        g_dave.session = daveSessionCreate(NULL, NULL, NULL, NULL);
     }
-    daveSessionSetExternalSender(g_dave.session, data, len);
+    if (g_dave.session) {
+        daveSessionSetExternalSender(g_dave.session, data, len);
+    }
+    DAVE_UNLOCK();
 }
 
 static void HandleDaveProposals(u8* data, size_t len) {
+    DAVE_LOCK();
     if (!g_dave.session) {
+        DAVE_UNLOCK();
         return;
     }
 
@@ -18,6 +24,7 @@ static void HandleDaveProposals(u8* data, size_t len) {
     size_t resp_size = 0;
     daveSessionProcessProposals(g_dave.session, data, len,
                                 user_ptrs, user_count, &resp, &resp_size);
+    DAVE_UNLOCK();
 
     if (resp && resp_size > 0) {
         DaveSendBinary(g_dave.webSocket, DAVE_MLS_COMMIT_WELCOME, resp, resp_size);
@@ -25,26 +32,33 @@ static void HandleDaveProposals(u8* data, size_t len) {
     }
 }
 
-#define DaveBeginTransitionHandler(data, len, payload_name, len_name) \
-    if (!g_dave.session || (len) < 2) { return; }                     \
-    i32    transition_id         = ((data)[0] << 8) | (data)[1];      \
-    u8*    payload_name          = (data) + 2;                        \
-    size_t len_name              = (len) - 2;                         \
-    g_dave.pending_transition_id = transition_id
-
 static void DaveTransitionReady(i32 transition_id) {
+    g_dave.pending_transition_id    = transition_id;
     g_dave.pending_transition_ready = 1;
     DaveSendJson1Int(g_dave.webSocket, VOICE_OP_READY_FOR_TRANSITION,
                      S8Lit("transition_id"), transition_id);
     if (transition_id == 0) {
         DaveCompleteTransition();
+    } else if (g_dave.pending_transition_executed && g_dave.pending_transition_id == transition_id) {
+        // NOTE(geni): EXECUTE_TRANSITION already arrived
+        DaveCompleteTransition();
     }
 }
 
 static void HandleDaveAnnounceCommit(u8* data, size_t len) {
-    DaveBeginTransitionHandler(data, len, commit_data, commit_len);
+    DAVE_LOCK();
+    if (!g_dave.session || (len) < 2) {
+        DAVE_UNLOCK();
+        return;
+    }
+    i32    transition_id         = ((data)[0] << 8) | (data)[1];
+    u8*    commit_data           = (data) + 2;
+    size_t commit_len            = (len) -2;
+    g_dave.pending_transition_id = transition_id;
 
     DAVECommitResultHandle result = daveSessionProcessCommit(g_dave.session, commit_data, commit_len);
+    DAVE_UNLOCK();
+
     if (result && !daveCommitResultIsFailed(result) && !daveCommitResultIsIgnored(result)) {
         DebugMsg("ProcessCommit succeeded: transition_id=%d\n", transition_id);
         DaveTransitionReady(transition_id);
@@ -61,7 +75,15 @@ static void HandleDaveAnnounceCommit(u8* data, size_t len) {
 }
 
 static void HandleDaveWelcome(u8* data, size_t len) {
-    DaveBeginTransitionHandler(data, len, welcome_data, welcome_len);
+    DAVE_LOCK();
+    if (!g_dave.session || (len) < 2) {
+        DAVE_UNLOCK();
+        return;
+    }
+    i32    transition_id         = ((data)[0] << 8) | (data)[1];
+    u8*    welcome_data          = (data) + 2;
+    size_t welcome_len           = (len) -2;
+    g_dave.pending_transition_id = transition_id;
 
     char        uid_bufs[DAVE_MAX_USERS][32];
     const char* user_ptrs[DAVE_MAX_USERS];
@@ -69,6 +91,8 @@ static void HandleDaveWelcome(u8* data, size_t len) {
 
     DAVEWelcomeResultHandle result = daveSessionProcessWelcome(g_dave.session, welcome_data, welcome_len,
                                                                user_ptrs, user_count);
+    DAVE_UNLOCK();
+
     if (result) {
         DebugMsg("ProcessWelcome succeeded: transition_id=%d\n", transition_id);
         DaveTransitionReady(transition_id);
@@ -89,6 +113,10 @@ static void HandleDaveBinaryMsg(QByteArray* data) {
     DaveBinaryHeader* hdr          = (DaveBinaryHeader*) raw;
     u8*               payload      = raw + sizeof(DaveBinaryHeader);
     size_t            payload_size = (size_t) (len - (i32) sizeof(DaveBinaryHeader));
+
+    DAVE_LOCK();
+    g_dave.last_seq = ((i32) raw[0] << 8) | (i32) raw[1];
+    DAVE_UNLOCK();
 
     switch (hdr->opcode) {
         case DAVE_MLS_EXTERNAL_SENDER: {
