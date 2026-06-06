@@ -34,4 +34,7 @@ Download the DLL file from [the Releases page](https://github.com/geniiii/ripcor
 
 [@u130b8](https://github.com/u130b8) for fixing image previews  
 [@ouwou](https://github.com/ouwou) for determining the cause of garbled audio  
-[@muffinl0rd](https://github.com/muffinl0rd) for bypassing ETF parser abortion
+[@muffinl0rd](https://github.com/muffinl0rd) for bypassing ETF parser abortion  
+[@septixxx](https://github.com/septixxx) for providing (LLM-assisted) PoC fixes for some issues with the DAVE implementation
+
+LLMs have been used to assist with the DAVE implementation; for example, to look for bugs and divergence from the DAVE whitepaper. Regardless, this project is _not_ "AI slop", and all other code is written without AI assistance.
