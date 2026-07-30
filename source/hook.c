@@ -744,13 +744,15 @@ static READVOICEDATAPACKET_WITHENCRYPTIONMODE(ReadVoiceDataPacketHook) {
 static DED_STEP(DedStepHook) {
     if (s->index != 255) {
         DedFrame frame = s->frames[s->index];
-        //
+        // NOTE(geni): Take tuple path instead of list path to avoid skipping NIL_EXT on accident.
+        //             See Ded::Step in IDA if confused
         if (frame == DEDFRAME_TUPLE_FLAG) {
             ++s->index;
             result->event.type = DedEventType_ListEnd;
             result->type       = DedResultType_Event;
             return result;
         }
+
         // NOTE(geni): Original Ded::Step logic
         if (frame < 2) {
             return ded_step(result, s);
