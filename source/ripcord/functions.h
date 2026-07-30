@@ -58,6 +58,9 @@ typedef VOICE_CONN_WS_CONNECTED(VoiceConnWSConnectedType);
 #define VOICE_CONN_TEXT_MSG_RECEIVED(name) void name(DisVLWorker* vw, const QString* text)
 typedef VOICE_CONN_TEXT_MSG_RECEIVED(VoiceConnTextMsgReceivedType);
 
+#define DED_STEP(name) DedResult* name(DedResult* result, DedState* s)
+typedef DED_STEP(DedStepType);
+
 static VoiceDataAppendType*                     voice_data_append;
 static ErfMapFindType*                          erf_map_find;
 static ErfArrAtType*                            erf_arr_at;
@@ -78,3 +81,4 @@ static EmptyVoicePacketSendType*                empty_voice_packet_send;
 static DisVoiceEncodeCreateEncodingContextType* disvoiceencode_createencodingcontext;
 static VoiceConnWSConnectedType*                voice_conn_ws_connected;
 static VoiceConnTextMsgReceivedType*            voice_conn_text_msg_received;
+static DedStepType*                             ded_step;

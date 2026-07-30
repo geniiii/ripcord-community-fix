@@ -138,6 +138,8 @@ typedef struct
 } DisDbPrepared;
 static_assert(sizeof(DisDbPrepared) == 0x1F0);
 
+//~ Voice
+
 typedef struct {
     QString plain;
     QString xsalsa20_poly1305;
@@ -248,5 +250,95 @@ enum {
     VOICE_OP_PREPARE_EPOCH        = 24,
     RTP_PACKET_TYPE_VOICE         = 0x78,
 };
+
+enum {
+    // NOTE(geni): 'h' (SMALL_TUPLE_EXT)
+    DedETFTerm_SmallTuple = 104,
+};
+
+//~ Dread/ETF
+
+typedef u32 DedEventType;
+enum {
+    DedEventType_Nil,
+    DedEventType_Uint8,
+    DedEventType_Int32,
+    DedEventType_Int64,
+    DedEventType_Uint64,
+    DedEventType_Float64,
+    DedEventType_Atom,
+    DedEventType_Binary,
+    DedEventType_ListStart,
+    DedEventType_ListEnd,
+    DedEventType_MapStart,
+    DedEventType_MapEnd,
+};
+static_assert(sizeof(DedEventType) == 4);
+
+typedef u8 DedResultType;
+enum {
+    DedResultType_Event,
+    DedResultType_Error,
+};
+static_assert(sizeof(DedResultType) == 1);
+
+typedef u8 DedErrorType;
+enum {
+    DedErrorType_EndedUnexpectedly,
+    DedErrorType_UnknownTermType,
+    DedErrorType_ValueOutOfRange,
+    DedErrorType_ExceededSizeLimit,
+};
+static_assert(sizeof(DedErrorType) == 1);
+
+// NOTE(geni): String8 matches with Ripcord's Ded::Bytes lmao
+typedef String8 DedBytes;
+static_assert(sizeof(DedBytes) == 0x10);
+
+typedef struct {
+    DedEventType type;
+    Pad(4);
+    union {
+        u8      uint8;
+        i32     int32;
+        i64     int64;
+        u64     uint64;
+        f64     float64;
+        String8 atom;
+        String8 binary;
+        u64     listStart;
+        u64     mapStart;
+    };
+} DedEvent;
+static_assert(sizeof(DedEvent) == 0x18);
+
+typedef struct {
+    DedErrorType type;
+    u8           unknownTerm;
+} DedError;
+static_assert(sizeof(DedError) == 2);
+
+// NOTE(geni): LSB is type, rest is count
+typedef u32 DedFrame;
+static_assert(sizeof(DedFrame) == 4);
+
+typedef struct {
+    DedResultType type;
+    Pad(7);
+    union {
+        DedEvent event;
+        DedError error;
+    };
+} DedResult;
+static_assert(sizeof(DedResult) == 0x20);
+
+typedef struct {
+    DedFrame frames[255];
+    Pad(4);
+    u8* data;
+    u64 length;
+    u64 index;
+} DedState;
+static_assert(sizeof(DedState) == 0x418);
 
 #pragma pack(pop)
