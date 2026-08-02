@@ -198,8 +198,6 @@ static void SendVoiceIdentify(DisVLWorker* vc) {
     qbytearray_destructor(&tok);
 
     SendTextSync(webSocket, json, len);
-    DebugMsg("Sent IDENTIFY: server_id=%llu user_id=%llu\n",
-             serverId, userId);
 }
 
 static VOICE_CONN_WS_CONNECTED(VoiceConnWSConnectedHook) {
