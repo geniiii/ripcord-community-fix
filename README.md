@@ -26,7 +26,7 @@ For `hook.so`, see [Building](#Building). I don't distribute binaries as I have 
 ## Building
 
 1. Build and install [funchook](https://github.com/kubo/funchook).
-2. `gcc -O2 -shared -fPIC -o hook.so source/hook.c -ldl -lfunchook` (or the equivalent command for your compiler of choice)
+2. `gcc -O2 -shared -fPIC -o hook.so source/build.c -ldl -lfunchook` (or the equivalent command for your compiler of choice)
 
 ## Credits
 
