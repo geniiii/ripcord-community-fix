@@ -5,9 +5,13 @@ typedef struct {
         char* cstr;
         void* data;
     };
-    u32 size;
+    u64 size;
 } String8;
 
 #define S8Lit(s) (String8) S8LitComp(s)
 #define S8LitComp(s) \
-    { (u8*) (s), sizeof(s) - 1 }
+    {(u8*) (s), sizeof(s) - 1}
+
+static u32 S8Equals(String8 a, String8 b) {
+    return a.size == b.size && memcmp(a.data, b.data, a.size) == 0;
+}
