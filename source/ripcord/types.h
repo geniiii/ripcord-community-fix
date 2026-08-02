@@ -29,8 +29,8 @@ typedef enum {
 } DisChannelType;
 
 typedef struct {
-    i32         length;
     const char* data;
+    i32         length;
     Pad(4);
 } ErfStr;
 static_assert(sizeof(ErfStr) == 0x10);
