@@ -81,6 +81,7 @@ static ERF_MAP_FIND(ErfMapFindHook) {
             new_out.tag == ErfTag_Arr) {
             ErfArr arr          = new_out.arr;
             ErfMap guild_folder = {0};
+            guilds_count        = 0;
             for (i32 i = 0; i < arr.count; ++i) {
                 erf_arr_at(&arr, &new_out, i);
                 if (new_out.tag != ErfTag_Map) {
@@ -92,7 +93,7 @@ static ERF_MAP_FIND(ErfMapFindHook) {
                     ErfArr guild_ids = new_out.arr;
                     for (i32 j = 0; j < guild_ids.count; ++j) {
                         erf_arr_at(&guild_ids, &new_out, j);
-                        if (new_out.tag == ErfTag_Uint64) {
+                        if (new_out.tag == ErfTag_Uint64 && guilds_count < ArrayCount(guilds)) {
                             u64 guild_id           = new_out.uint64;
                             guilds[guilds_count++] = guild_id;
                         }
