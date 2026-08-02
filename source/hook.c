@@ -39,9 +39,10 @@ static UPDATEUSERGUILDPOSITIONS(UpdateUserGuildPositionsHook) {
     RipStmt orderQ;
     RipStmt deleteQ;
 
-    if (comStmts) {
-        disdbprepared_begintx(comStmts);
+    if (!comStmts) {
+        return;
     }
+    disdbprepared_begintx(comStmts);
     ripstmt_constructor(&deleteQ, comStmts->db, "\ndelete from user_guild_position\nwhere user_id = ?\n", 0i64);
     ripstmt_bind_u64(&deleteQ, 1, userId.u);
     ripstmt_step(&deleteQ);
