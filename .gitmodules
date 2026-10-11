@@ -1,0 +1,3 @@
+[submodule "libdave"]
+path = source/ext/libdave
+url = https://github.com/discord/libdave.git
