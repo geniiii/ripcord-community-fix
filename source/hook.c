@@ -449,10 +449,20 @@ static SETVOICEENCSTRINGS(SetVoiceEncStringsHook) {
     return arr;
 }
 
-void SendVoiceData(u32* noncePtr, void* udpSocket, u8* buffer, u32 encMode, u8* secretKey, QString* hostName, u16 port, u32 ssrc, u16* seq, u8* data, u64 dataSize, u32 timestamp) {
+void SendVoiceData(u32* noncePtr, void* udpSocket, u8* buffer, u32 encMode, u8* secretKey, QString* hostName, u16 port, u32 ssrc, u16* seq, u8* data, u64 dataSize) {
     if (!secretKey || !hostName->d->size) {
         return;
     }
+
+    // NOTE(geni): Ripcord's timestamp stops counting during silence
+    //             Instead of using its timestamp at all, we just do 960 per voice packet
+    //             and during silence we move the timestamp by actual wall time
+    static u32 timestamp;
+    static u64 last_send_ms;
+    u64        now     = GetTickCount64();
+    u64        elapsed = now - last_send_ms;
+    timestamp += elapsed > 100 ? (u32) (elapsed * 48) : 960;
+    last_send_ms = now;
 
     // NOTE(geni): Generate RTP header
     buffer[0] = 0x80;
@@ -579,8 +589,7 @@ static void EmptyVoicePacketSendHook(DisVLWorker** vlWorkerPtr) {
     }
     ++vlWorker->emptyVoicePacketsSent;
 
-    u8  silence_packet[3] = {0xF8, 0xFF, 0xFE};
-    u64 timestamp         = qdatetime_currentmsecsinceepoch();
+    u8 silence_packet[3] = {0xF8, 0xFF, 0xFE};
 
     SendVoiceData(
         &vlWorker->COMMUNITY_FIX_nonce,
@@ -590,14 +599,14 @@ static void EmptyVoicePacketSendHook(DisVLWorker** vlWorkerPtr) {
         vlWorker->secretKey,
         &vlWorker->serverAddress, vlWorker->serverPort,
         vlWorker->ssrc, &vlWorker->sequence,
-        silence_packet, 3,
-        (u32) timestamp);
+        silence_packet, 3);
 
     if (vlWorker->emptyVoicePacketsSent >= 6) {
         qtimer_stop(vlWorker->emptyVoicePacketsTimer);
     }
 }
 static SEND_VOICE_DATAGRAM(SendVoiceDatagramHook) {
+    Unreferenced(timestamp);
     DisVLWorker* vlWorker = this->priv->vlWorker;
     if (!vlWorker || !vlWorker->serverAddress.d->size || !vlWorker->secretKey) {
         return;
@@ -614,8 +623,7 @@ static SEND_VOICE_DATAGRAM(SendVoiceDatagramHook) {
         vlWorker->ssrc,
         &vlWorker->sequence,
         data,
-        dataSize,
-        timestamp);
+        dataSize);
 }
 
 static DISVLWORKER_CONSTRUCTOR(DisVLWorkerConstructorHook) {
