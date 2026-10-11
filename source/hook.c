@@ -17,7 +17,7 @@ static WRITE_DATAGRAM(WriteDatagramHook) {
 // NOTE(geni): Force voice chat WS connection over IPv4 because people say it doesn't work over IPv6
 //			   I can't test it myself, so this is purely speculative...
 static QABSTRACTSOCKET_CONNECTTOHOST(QAbstractSocketConnectToHostHook) {
-	Unreferenced(protocol);
+    Unreferenced(protocol);
     qabstractsocket_connecttohost(this, hostName, port, openMode, QAbstractSocket_NetworkLayerProtocol_IPv4Protocol);
 }
 
@@ -655,83 +655,96 @@ static DISVLWORKER_CONSTRUCTOR(DisVLWorkerConstructorHook) {
     return this;
 }
 
+#define RTP_HEADER_SIZE           12
+#define RTP_CSRC_SIZE             4
+#define RTP_EXTENSION_HEADER_SIZE 4
+#define RTP_NONCE_SIZE            4
+// NOTE(geni): 0b00001111
+#define RTP_CSRC_COUNT_MASK 0b00001111
+// NOTE(geni): 0b00010000
+#define RTP_EXTENSION_BIT 0b00010000
+// NOTE(geni): 0b01111111
+#define RTP_PAYLOAD_TYPE_MASK 0b01111111
 static READVOICEDATAPACKET_WITHENCRYPTIONMODE(ReadVoiceDataPacketHook) {
-    if (modeSpec == 0 || secretKey == NULL || size <= 0xC) {
+    if (modeSpec == 0 || secretKey == NULL || size < RTP_HEADER_SIZE) {
         return;
     }
-    // NOTE(geni): RTP header bullshit
-    u8 has_extension = (data[0] >> 4) & 1;
-    u8 csrc_count    = data[0] & 0xF;
-    u8 pt            = data[1] & 0x7F;
-    if (pt != RTP_PACKET_TYPE_VOICE) {
+
+    if ((data[1] & RTP_PAYLOAD_TYPE_MASK) != RTP_PACKET_TYPE_VOICE) {
         ErrorMessage("Invalid RTP packet type");
         return;
     }
-    u16 sequence  = data[2] << 8 | data[3];
-    u32 timestamp = (data[4] << 24) | (data[5] << 16) | (data[6] << 8) | data[7];
-    u32 ssrc      = (data[8] << 24) | (data[9] << 16) | (data[10] << 8) | data[11];
-    // NOTE(geni): Add CSRCs (4 bytes each) + RTP header extension
-    u32 rtp_size = 12 + (4 * csrc_count);
+    u16 sequence  = ReadU16BE(data + 2);
+    u32 timestamp = ReadU32BE(data + 4);
+    u32 ssrc      = ReadU32BE(data + 8);
 
-    u8  decrypted[4096];
-    u64 decrypted_len;
     switch (modeSpec) {
         case VoiceEncMode_XChaCha20_Poly1305_RtpSize: {
-            if (size < 36) {
+            u64 csrc_count = data[0] & RTP_CSRC_COUNT_MASK;
+            // NOTE(geni): Add CSRCs (4 bytes each) + RTP header extension
+            u64 header_size    = RTP_HEADER_SIZE + csrc_count * RTP_CSRC_SIZE;
+            u64 extension_size = 0;
+            if (data[0] & RTP_EXTENSION_BIT) {
+                if (size < header_size + RTP_EXTENSION_HEADER_SIZE) {
+                    return;
+                }
+                u16 extension_dwords = ReadU16BE(data + header_size + 2);
+                extension_size       = extension_dwords * 4;
+                // NOTE(geni): Skip RTP extension header
+                header_size += RTP_EXTENSION_HEADER_SIZE;
+            }
+
+            if (size < header_size + crypto_aead_xchacha20poly1305_ietf_ABYTES + RTP_NONCE_SIZE) {
                 return;
             }
-            // NOTE(geni): Nonce is last 4 bytes
-            u8 nonce[24] = {0};
-            memcpy(&nonce[0], data + size - 4, 4);
+            u8* ciphertext     = data + header_size;
+            u64 ciphertext_len = size - header_size - RTP_NONCE_SIZE;
 
-            u32 data_offset = 0;
-            if (has_extension) {
-                u16 extension_size_in_dwords = (data[rtp_size + 2] << 8) | data[rtp_size + 3];
-                data_offset += 4 * extension_size_in_dwords;
-                // NOTE(geni): Skip RTP extension header
-                rtp_size += 4;
+            u8  decrypted[4096];
+            u64 decrypted_len;
+            if (ciphertext_len - crypto_aead_xchacha20poly1305_ietf_ABYTES > sizeof decrypted) {
+                return;
             }
 
-            if (crypto_aead_xchacha20poly1305_ietf_decrypt(decrypted, &decrypted_len,
-                                                           NULL,
-                                                           data + rtp_size, size - rtp_size - 4,
-                                                           data, rtp_size,
+            // NOTE(geni): Nonce is last 4 bytes
+            u8 nonce[24] = {0};
+            memcpy(nonce, ciphertext + ciphertext_len, RTP_NONCE_SIZE);
+            if (crypto_aead_xchacha20poly1305_ietf_decrypt(decrypted, &decrypted_len, NULL,
+                                                           ciphertext, ciphertext_len,
+                                                           data, header_size,
                                                            nonce, secretKey) != 0) {
                 // NOTE(geni): Presumably we actually got xsalsa20_poly1305 somehow... or we messed up
                 ErrorMessage("Failed to decrypt voice data");
                 return;
             }
-
-            // NOTE(geni): Ripcord expects full first byte instead of just version
-            // NOTE(geni): Hardcode "version" to 80 so Ripcord doesn't apply its evil processing to it
-            u8* final_data = decrypted + data_offset;
-            u64 final_len  = decrypted_len - data_offset;
-
-            if (!g_dave.dave_enabled) {
-                voice_data_append(voiceAccum, final_data, final_len, 0x80, sequence, timestamp, ssrc);
-                break;
+            if (decrypted_len < extension_size) {
+                return;
             }
+
+            u8* payload     = decrypted + extension_size;
+            u64 payload_len = decrypted_len - extension_size;
 
             // NOTE(geni): Silence frames are not DAVE-encrypted
-            if (final_len == 3 && final_data[0] == 0xF8 &&
-                final_data[1] == 0xFF && final_data[2] == 0xFE) {
-                voice_data_append(voiceAccum, final_data, final_len, 0x80, sequence, timestamp, ssrc);
-                break;
-            }
-
-            DAVE_LOCK();
-            u64   uid = DaveLookupUserId(ssrc);
-            void* dec = DaveGetOrCreateDecryptor(ssrc, uid);
-            if (!dec) {
-                DAVE_UNLOCK();
+            u8 is_silence = payload_len == 3 && payload[0] == 0xF8 && payload[1] == 0xFF && payload[2] == 0xFE;
+            // NOTE(geni): Try to avoid passing DAVE frames to Opus.
+            //			   I don't know if this can ever really happen, but it would blow up users' ears
+            u8 is_dave_frame = payload_len >= 2 && ReadU16BE(payload + payload_len - 2) == DAVE_MAGIC_BYTES;
+            if (is_silence || (!g_dave.dave_enabled && !is_dave_frame)) {
+                // NOTE(geni): Ripcord expects full first byte instead of just version
+                // NOTE(geni): Hardcode "version" to 80 so Ripcord doesn't apply its evil processing to it
+                voice_data_append(voiceAccum, payload, payload_len, 0x80, sequence, timestamp, ssrc);
                 break;
             }
 
             u8     dave_plain[4096];
             size_t written = 0;
-            i32    result  = daveDecryptorDecrypt(dec, DAVE_MEDIA_TYPE_AUDIO,
-                                                  final_data, (size_t) final_len,
-                                                  dave_plain, sizeof dave_plain, &written);
+            i32    result  = DAVE_DECRYPTOR_RESULT_CODE_DECRYPTION_FAILURE;
+            DAVE_LOCK();
+            void* dec = DaveGetOrCreateDecryptor(ssrc, DaveLookupUserId(ssrc));
+            if (dec) {
+                result = daveDecryptorDecrypt(dec, DAVE_MEDIA_TYPE_AUDIO, payload, (size_t) payload_len,
+                                              dave_plain, sizeof dave_plain, &written);
+            }
             DAVE_UNLOCK();
             if (result == DAVE_DECRYPTOR_RESULT_CODE_SUCCESS) {
                 voice_data_append(voiceAccum, dave_plain, (u64) written, 0x80, sequence, timestamp, ssrc);
@@ -739,7 +752,7 @@ static READVOICEDATAPACKET_WITHENCRYPTIONMODE(ReadVoiceDataPacketHook) {
         } break;
         default: {
             // NOTE(geni): Just append it as-is for now, since that's what Ripcord originally did lol
-            voice_data_append(voiceAccum, data + 12, size - 12, data[0], sequence, timestamp, ssrc);
+            voice_data_append(voiceAccum, data + RTP_HEADER_SIZE, size - RTP_HEADER_SIZE, data[0], sequence, timestamp, ssrc);
         } break;
     }
 }

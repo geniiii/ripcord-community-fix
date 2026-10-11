@@ -1,3 +1,5 @@
+#define crypto_aead_xchacha20poly1305_ietf_ABYTES        16
+
 #define CRYPTO_AEAD_XCHACHA20POLY1305_IETF_DECRYPT(name) i32 name(u8* m, u64* mlen_p, u8* nsec, const u8* c, u64 clen, const u8* ad, u64 adlen, const u8* npub, const u8* k)
 typedef CRYPTO_AEAD_XCHACHA20POLY1305_IETF_DECRYPT(CryptoAeadXchacha20poly1305IetfDecryptType);
 

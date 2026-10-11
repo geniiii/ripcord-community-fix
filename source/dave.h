@@ -1,11 +1,13 @@
-#define DAVE_MAX_DECRYPTORS                256
-#define DAVE_MAX_SSRC_MAP                  256
-#define DAVE_MAX_USERS                     256
-#define DAVE_MEDIA_TYPE_AUDIO              0
-#define DAVE_CODEC_OPUS                    1
+#define DAVE_MAX_DECRYPTORS                           256
+#define DAVE_MAX_SSRC_MAP                             256
+#define DAVE_MAX_USERS                                256
+#define DAVE_MEDIA_TYPE_AUDIO                         0
+#define DAVE_CODEC_OPUS                               1
+#define DAVE_MAGIC_BYTES                              0xFAFA
 
-#define DAVE_ENCRYPTOR_RESULT_CODE_SUCCESS 0
-#define DAVE_DECRYPTOR_RESULT_CODE_SUCCESS 0
+#define DAVE_ENCRYPTOR_RESULT_CODE_SUCCESS            0
+#define DAVE_DECRYPTOR_RESULT_CODE_SUCCESS            0
+#define DAVE_DECRYPTOR_RESULT_CODE_DECRYPTION_FAILURE 1
 
 enum {
     DAVE_MLS_EXTERNAL_SENDER = 25,
