@@ -47,9 +47,13 @@ static void DaveRemoveConnectedUser(u64 userId) {
 }
 
 static u32 DaveBuildUserPtrs(const char** ptrs, char bufs[][32]) {
-    for (u32 i = 0; i < g_dave.connected_user_count; ++i) {
+    u32 count = g_dave.connected_user_count;
+    for (u32 i = 0; i < count; ++i) {
         String8 uid = S8FromU64(g_dave.connected_user_ids[i], bufs[i], 32);
         ptrs[i]     = uid.cstr;
     }
-    return g_dave.connected_user_count;
+    // NOTE(geni): The welcome's roster includes us
+    String8 self  = S8FromU64(g_dave.user_id, bufs[count], 32);
+    ptrs[count++] = self.cstr;
+    return count;
 }

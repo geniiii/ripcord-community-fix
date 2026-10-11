@@ -16,8 +16,8 @@ static void HandleDaveProposals(u8* data, size_t len) {
         return;
     }
 
-    char        uid_bufs[DAVE_MAX_USERS][32];
-    const char* user_ptrs[DAVE_MAX_USERS];
+    char        uid_bufs[DAVE_MAX_USERS + 1][32];
+    const char* user_ptrs[DAVE_MAX_USERS + 1];
     u32         user_count = DaveBuildUserPtrs(user_ptrs, uid_bufs);
 
     u8*    resp      = NULL;
@@ -33,6 +33,12 @@ static void HandleDaveProposals(u8* data, size_t len) {
 }
 
 static void DaveTransitionReady(i32 transition_id) {
+    DAVE_LOCK();
+    if (g_dave.session) {
+        DaveRefreshDecryptors();
+    }
+    DAVE_UNLOCK();
+
     g_dave.pending_transition_id    = transition_id;
     g_dave.pending_transition_ready = 1;
     DaveSendJson1Int(g_dave.webSocket, VOICE_OP_READY_FOR_TRANSITION,
@@ -66,6 +72,7 @@ static void HandleDaveAnnounceCommit(u8* data, size_t len) {
         DebugMsg("ProcessCommit failed\n");
         DaveSendJson1Int(g_dave.webSocket, DAVE_MLS_INVALID_COMMIT,
                          S8Lit("transition_id"), transition_id);
+        DaveReinit();
     } else {
         DebugMsg("ProcessCommit ignored\n");
     }
@@ -85,8 +92,8 @@ static void HandleDaveWelcome(u8* data, size_t len) {
     size_t welcome_len           = (len) -2;
     g_dave.pending_transition_id = transition_id;
 
-    char        uid_bufs[DAVE_MAX_USERS][32];
-    const char* user_ptrs[DAVE_MAX_USERS];
+    char        uid_bufs[DAVE_MAX_USERS + 1][32];
+    const char* user_ptrs[DAVE_MAX_USERS + 1];
     u32         user_count = DaveBuildUserPtrs(user_ptrs, uid_bufs);
 
     DAVEWelcomeResultHandle result = daveSessionProcessWelcome(g_dave.session, welcome_data, welcome_len,
@@ -99,6 +106,9 @@ static void HandleDaveWelcome(u8* data, size_t len) {
         daveWelcomeResultDestroy(result);
     } else {
         DebugMsg("ProcessWelcome failed\n");
+        DaveSendJson1Int(g_dave.webSocket, DAVE_MLS_INVALID_COMMIT,
+                         S8Lit("transition_id"), transition_id);
+        DaveReinit();
     }
 }
 

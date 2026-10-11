@@ -17,6 +17,22 @@ static void DaveReset(void) {
     DAVE_UNLOCK();
 }
 
+static void DaveRefreshDecryptors(void) {
+    char uid_buf[32];
+    for (u32 i = 0; i < g_dave.decryptor_count; ++i) {
+        u64 uid = g_dave.decryptors[i].userId;
+        if (uid == 0) {
+            continue;
+        }
+        String8 uid_str = S8FromU64(uid, uid_buf, sizeof uid_buf);
+        void*   ratchet = daveSessionGetKeyRatchet(g_dave.session, uid_str.cstr);
+        if (ratchet) {
+            daveDecryptorTransitionToKeyRatchet(g_dave.decryptors[i].decryptor, ratchet);
+            daveKeyRatchetDestroy(ratchet);
+        }
+    }
+}
+
 static void DaveCompleteTransition(void) {
     DAVE_LOCK();
     if (!g_dave.pending_transition_ready) {
@@ -49,19 +65,7 @@ static void DaveCompleteTransition(void) {
     daveEncryptorSetKeyRatchet(g_dave.encryptor, self_ratchet);
     daveKeyRatchetDestroy(self_ratchet);
 
-    // NOTE(geni): Refresh existing decryptors
-    for (u32 i = 0; i < g_dave.decryptor_count; ++i) {
-        u64 uid = g_dave.decryptors[i].userId;
-        if (uid == 0) {
-            continue;
-        }
-        uid_str       = S8FromU64(uid, uid_buf, sizeof uid_buf);
-        void* ratchet = daveSessionGetKeyRatchet(g_dave.session, uid_str.cstr);
-        if (ratchet) {
-            daveDecryptorTransitionToKeyRatchet(g_dave.decryptors[i].decryptor, ratchet);
-            daveKeyRatchetDestroy(ratchet);
-        }
-    }
+    DaveRefreshDecryptors();
 
     if (!g_dave.dave_enabled) {
         g_dave.dave_enabled    = 1;

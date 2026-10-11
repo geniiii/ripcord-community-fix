@@ -389,11 +389,9 @@ static VOICE_CONN_TEXT_MSG_RECEIVED(VoiceConnTextMsgReceivedHook) {
                 if (epoch == 1) {
                     // NOTE(geni): New MLS group
                     DAVE_LOCK();
-                    g_dave.protocol_version         = (u16) proto_ver;
-                    g_dave.pending_protocol_version = (u16) proto_ver;
-                    g_dave.pending_transition_id    = transition_id;
+                    g_dave.pending_transition_id = transition_id;
                     DAVE_UNLOCK();
-                    DaveReinit();
+                    DaveInit((u16) proto_ver);
                 } else {
                     DAVE_LOCK();
                     g_dave.pending_protocol_version    = (u16) proto_ver;
@@ -729,7 +727,8 @@ static READVOICEDATAPACKET_WITHENCRYPTIONMODE(ReadVoiceDataPacketHook) {
             // NOTE(geni): Try to avoid passing DAVE frames to Opus.
             //			   I don't know if this can ever really happen, but it would blow up users' ears
             u8 is_dave_frame = payload_len >= 2 && ReadU16BE(payload + payload_len - 2) == DAVE_MAGIC_BYTES;
-            if (is_silence || (!g_dave.dave_enabled && !is_dave_frame)) {
+            u8 passthrough = !g_dave.dave_enabled || g_dave.pending_protocol_version == 0;
+            if (is_silence || (passthrough && !is_dave_frame)) {
                 // NOTE(geni): Ripcord expects full first byte instead of just version
                 // NOTE(geni): Hardcode "version" to 80 so Ripcord doesn't apply its evil processing to it
                 voice_data_append(voiceAccum, payload, payload_len, 0x80, sequence, timestamp, ssrc);
