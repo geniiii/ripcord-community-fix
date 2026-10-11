@@ -2,6 +2,11 @@
 #include "proxied.inc"
 #undef Proxy
 
+#define WARNING_MESSAGE                                                               \
+    HIJACKED_DLL                                                                      \
+    " from Ripcord Community Fix was loaded by a process other than Ripcord.exe.\n\n" \
+    "To avoid potential issues, please delete " HIJACKED_DLL " from %s."
+
 static HINSTANCE lib_handle;
 BOOL WINAPI      DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
     (void) reserved;
@@ -21,6 +26,17 @@ BOOL WINAPI      DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
 #undef Proxy
 
         DisableThreadLibraryCalls(inst);
+
+        if (!GetModuleHandleA("Ripcord.exe")) {
+            char dll_dir[MAX_PATH];
+            GetModuleFileNameA(inst, dll_dir, sizeof dll_dir);
+            PathRemoveFileSpecA(dll_dir);
+            char msg[MAX_PATH + sizeof WARNING_MESSAGE];
+            snprintf(msg, sizeof msg, WARNING_MESSAGE, dll_dir);
+            MessageBoxA(0, msg, "Ripcord Community Fix Warning", MB_ICONWARNING);
+            return 1;
+        }
+
 #if BUILD_DEBUG
         AllocConsole();
         freopen("CONIN$", "rb", stdin);
