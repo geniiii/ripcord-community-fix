@@ -11,12 +11,14 @@ if /i "%build_type%"=="debug" (
     set CMAKE_RUNTIME=MultiThreadedDebug
     set MSVC_RUNTIME=/MTd
     set LINK_DEBUG=/Debug:full
+    set build_options=%build_options% /DBUILD_DEBUG=1
     set VCPKG_LIB_DIR=../source/ext/libdave/cpp/build_Debug/vcpkg_installed/x64-windows-static/debug/lib
 ) else (
     set CMAKE_CONFIG=Release
     set CMAKE_RUNTIME=MultiThreaded
     set MSVC_RUNTIME=/MT /O2
     set LINK_DEBUG=/Debug:none
+    set build_options=%build_options% /DBUILD_DEBUG=0
     set VCPKG_LIB_DIR=../source/ext/libdave/cpp/build_Release/vcpkg_installed/x64-windows-static/lib
 )
 

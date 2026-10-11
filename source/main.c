@@ -21,7 +21,7 @@ BOOL WINAPI      DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
 #undef Proxy
 
         DisableThreadLibraryCalls(inst);
-#if 0
+#if BUILD_DEBUG
         AllocConsole();
         freopen("CONIN$", "rb", stdin);
         freopen("CONOUT$", "wb", stdout);
