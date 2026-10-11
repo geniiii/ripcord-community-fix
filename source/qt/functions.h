@@ -4,6 +4,9 @@ typedef WRITE_DATAGRAM(WriteDatagramType);
 #define READ_DATAGRAM(name) i64 name(void* this, char* data, i64 size, void* address, u16* port)
 typedef READ_DATAGRAM(ReadDatagramType);
 
+#define QABSTRACTSOCKET_CONNECTTOHOST(name) void name(void* this, const QString* hostName, u16 port, i32 openMode, QAbstractSocket_NetworkLayerProtocol protocol)
+typedef QABSTRACTSOCKET_CONNECTTOHOST(QAbstractSocketConnectToHostType);
+
 #define QSTRING_SET_FROM_QLATIN1STRING(name) QString* name(QString* str, QLatin1String lstr)
 typedef QSTRING_SET_FROM_QLATIN1STRING(QStringSetFromQLatin1StringType);
 
@@ -69,6 +72,7 @@ typedef QOBJECT_CONNECTIMPL(QObjectConnectImplType);
 
 static WriteDatagramType*                      write_datagram;
 static ReadDatagramType*                       read_datagram;
+static QAbstractSocketConnectToHostType*       qabstractsocket_connecttohost;
 static QStringSetFromQLatin1StringType*        qstring_set_from_qlatin1string;
 static QJsonObjectConstructorType*             qjsonobject_constructor;
 static QJsonValueConstructorIntType*           qjsonvalue_constructor_int;

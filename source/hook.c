@@ -14,6 +14,13 @@ static WRITE_DATAGRAM(WriteDatagramHook) {
     return write_datagram(this, data, size, addr, port);
 }
 
+// NOTE(geni): Force voice chat WS connection over IPv4 because people say it doesn't work over IPv6
+//			   I can't test it myself, so this is purely speculative...
+static QABSTRACTSOCKET_CONNECTTOHOST(QAbstractSocketConnectToHostHook) {
+	Unreferenced(protocol);
+    qabstractsocket_connecttohost(this, hostName, port, openMode, QAbstractSocket_NetworkLayerProtocol_IPv4Protocol);
+}
+
 static READ_DATAGRAM(ReadDatagramHook) {
     if (size == 74) {
         i64 result = read_datagram(this, data, size, address, port);
@@ -886,7 +893,10 @@ static u32 LoadHooks() {
     u64 read_datagram_addr  = (u64) GetProcAddress(qt5network, "?readDatagram@QUdpSocket@@QEAA_JPEAD_JPEAVQHostAddress@@PEAG@Z");
     u64 write_datagram_addr = (u64) GetProcAddress(qt5network, "?writeDatagram@QUdpSocket@@QEAA_JPEBD_JAEBVQHostAddress@@G@Z");
 
+    u64 connect_to_host_addr = (u64) GetProcAddress(qt5network, "?connectToHost@QAbstractSocket@@UEAAXAEBVQString@@GV?$QFlags@W4OpenModeFlag@QIODevice@@@@W4NetworkLayerProtocol@1@@Z");
+
     u32 result = 1;
+    result &= CreateAndEnableHook(0, connect_to_host_addr, (LPVOID) &QAbstractSocketConnectToHostHook, (LPVOID*) &qabstractsocket_connecttohost);
     result &= CreateAndEnableHook(rip_base, 0xB9690, (LPVOID) &ErfMapFindHook, (LPVOID*) &erf_map_find);
     result &= CreateAndEnableHook(rip_base, 0xF9750, (LPVOID) &UpdateUserGuildPositionsHook, (LPVOID*) &update_user_guild_positions);
     result &= CreateAndEnableHook(rip_base, 0xCA3B0 + 0xC00, (LPVOID) &SetVoiceEncStringsHook, (LPVOID*) &set_voice_enc_strings);

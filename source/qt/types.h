@@ -19,6 +19,13 @@ typedef enum {
     QJsonValue_Type_Undefined = 0x80,
 } QJsonValue_Type;
 
+typedef enum {
+    QAbstractSocket_NetworkLayerProtocol_IPv4Protocol,
+    QAbstractSocket_NetworkLayerProtocol_IPv6Protocol,
+    QAbstractSocket_NetworkLayerProtocol_AnyIPProtocol,
+    QAbstractSocket_NetworkLayerProtocol_UnknownNetworkLayerProtocol = -1,
+} QAbstractSocket_NetworkLayerProtocol;
+
 typedef struct {
     u64                u0;
     QJsonPrivate_Data* d;
