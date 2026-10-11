@@ -56,7 +56,7 @@ typedef uintptr_t uptr;
 #define HIJACKED_DLL          "winmm.dll"
 #define SUPPORTED_VERSION     "0.4.29"
 
-#define VERSION               "1.10.0"
+#define VERSION               "1.10.0-pre1"
 
 #define JSMN_STATIC
 #include "ext/jsmn.h"
