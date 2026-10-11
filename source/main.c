@@ -55,7 +55,9 @@ BOOL WINAPI      DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
     return 1;
 }
 
+#pragma optimize("gt", on)
 #define Proxy(name) \
     void PROXY_##name() { Func_##name(); }
 #include "proxied.inc"
 #undef Proxy
+#pragma optimize("", on)
