@@ -23,6 +23,8 @@
 #include <Psapi.h>
 #include <Shlwapi.h>
 #include <Ntsecapi.h>
+#include <winhttp.h>
+#include <shellapi.h>
 #include "ext/minhook/MinHook.c"
 #include <stdint.h>
 #include <stdio.h>
@@ -54,10 +56,13 @@ typedef uintptr_t uptr;
 #define HIJACKED_DLL          "winmm.dll"
 #define SUPPORTED_VERSION     "0.4.29"
 
+#define VERSION               "1.9.4"
+
 #define JSMN_STATIC
 #include "ext/jsmn.h"
 #include "string8.c"
 #include "util.c"
+#include "update.c"
 #include "qt/types.h"
 #include "qt/functions.h"
 #include "ripcord/types.h"

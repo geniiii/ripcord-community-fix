@@ -27,7 +27,11 @@ BOOL WINAPI      DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
         freopen("CONOUT$", "wb", stdout);
         freopen("CONOUT$", "wb", stderr);
 #endif
-        return LoadHooks();
+        u32 result = LoadHooks();
+        if (result) {
+            StartUpdateCheck();
+        }
+        return result;
     } else if (reason == DLL_PROCESS_DETACH) {
         FreeLibrary(lib_handle);
     }

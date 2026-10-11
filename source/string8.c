@@ -11,9 +11,55 @@ typedef struct {
 #define S8Lit(s) (String8) S8LitComp(s)
 #define S8LitComp(s) \
     {(u8*) (s), sizeof(s) - 1}
+#define S8VArg(s) (i32)((s).size), ((s).cstr)
 
 static u32 S8Equals(String8 a, String8 b) {
     return a.size == b.size && memcmp(a.data, b.data, a.size) == 0;
+}
+
+static inline String8 S8SubstrOnIndex(String8 str, u64 index) {
+    return (String8) {
+        .s    = str.s + index,
+        .size = str.size - index,
+    };
+}
+
+static u32 S8StartsWith(String8 s, String8 prefix) {
+    return s.size >= prefix.size && memcmp(s.data, prefix.data, prefix.size) == 0;
+}
+
+static u32 S8ConsumePrefix(String8* s, String8 prefix) {
+    if (!S8StartsWith(*s, prefix)) {
+        return 0;
+    }
+    *s = S8SubstrOnIndex(*s, prefix.size);
+    return 1;
+}
+
+static String8 S8UntilNewline(String8 s) {
+    u64 i = 0;
+    while (i < s.size && s.s[i] != '\r' && s.s[i] != '\n') {
+        ++i;
+    }
+    return (String8) {
+        .s    = s.s,
+        .size = i,
+    };
+}
+
+static u32 S8ConsumeU8(String8* s, u8* out) {
+    u64 i     = 0;
+    u32 value = 0;
+    while (i < s->size && s->s[i] >= '0' && s->s[i] <= '9') {
+        value = value * 10 + (s->s[i] - '0');
+        if (value > 0xFF) {
+            return 0;
+        }
+        ++i;
+    }
+    *out = (u8) value;
+    *s   = S8SubstrOnIndex(*s, i);
+    return i > 0;
 }
 
 // NOTE(geni): Stolen from https://lemire.me/blog/2021/11/18/converting-integers-to-fix-digit-representations-quickly/
@@ -48,5 +94,8 @@ static String8 S8FromU64(u64 value, char* buf, u32 bufsize) {
     while (start < end - 1 && *start == '0') {
         ++start;
     }
-    return (String8) {(u8*) start, (u64) (end - start)};
+    return (String8) {
+        .s    = (u8*) start,
+        .size = (u64) (end - start),
+    };
 }
