@@ -479,9 +479,9 @@ void SendVoiceData(u32* noncePtr, void* udpSocket, u8* buffer, u32 encMode, u8* 
 
     DAVE_LOCK();
     if (g_dave.dave_enabled && g_dave.encryptor) {
-        size_t written = 0;
-        i32    result  = daveEncryptorEncrypt(g_dave.encryptor, DAVE_MEDIA_TYPE_AUDIO, ssrc,
-                                              data, (size_t) dataSize, dave_buf, sizeof dave_buf, &written);
+        size_t                  written = 0;
+        DAVEEncryptorResultCode result  = daveEncryptorEncrypt(g_dave.encryptor, DAVE_MEDIA_TYPE_AUDIO, ssrc,
+                                                               data, (size_t) dataSize, dave_buf, sizeof dave_buf, &written);
         if (result == DAVE_ENCRYPTOR_RESULT_CODE_SUCCESS) {
             encrypt_payload = dave_buf;
             encrypt_size    = (u64) written;
@@ -736,9 +736,9 @@ static READVOICEDATAPACKET_WITHENCRYPTIONMODE(ReadVoiceDataPacketHook) {
                 break;
             }
 
-            u8     dave_plain[4096];
-            size_t written = 0;
-            i32    result  = DAVE_DECRYPTOR_RESULT_CODE_DECRYPTION_FAILURE;
+            u8                      dave_plain[4096];
+            size_t                  written = 0;
+            DAVEDecryptorResultCode result  = DAVE_DECRYPTOR_RESULT_CODE_DECRYPTION_FAILURE;
             DAVE_LOCK();
             void* dec = DaveGetOrCreateDecryptor(ssrc, DaveLookupUserId(ssrc));
             if (dec) {

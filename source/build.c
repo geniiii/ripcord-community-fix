@@ -48,8 +48,8 @@ typedef uintptr_t uptr;
 #define Pad(size)             u8 MacroConcat(_pad, __COUNTER__)[size]
 #define Unreferenced(x)       (void) x
 #define ArrayCount(a)         (sizeof(a) / sizeof((a)[0]))
-#define ReadU16BE(p)          ((u16) (((p)[0] << 8) | (p)[1]))
-#define ReadU32BE(p)          (((u32) (p)[0] << 24) | ((u32) (p)[1] << 16) | ((u32) (p)[2] << 8) | (u32) (p)[3])
+#define ReadU16BE(a)          ((u16) (((a)[0] << 8) | (a)[1]))
+#define ReadU32BE(a)          (((u32) (a)[0] << 24) | ((u32) (a)[1] << 16) | ((u32) (a)[2] << 8) | (u32) (a)[3])
 
 #define HIJACKED_DLL          "winmm.dll"
 #define SUPPORTED_VERSION     "0.4.29"

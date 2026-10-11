@@ -1,13 +1,9 @@
-#define DAVE_MAX_DECRYPTORS                           256
-#define DAVE_MAX_SSRC_MAP                             256
-#define DAVE_MAX_USERS                                256
-#define DAVE_MEDIA_TYPE_AUDIO                         0
-#define DAVE_CODEC_OPUS                               1
-#define DAVE_MAGIC_BYTES                              0xFAFA
+#include "ext/libdave/cpp/includes/dave/dave.h"
 
-#define DAVE_ENCRYPTOR_RESULT_CODE_SUCCESS            0
-#define DAVE_DECRYPTOR_RESULT_CODE_SUCCESS            0
-#define DAVE_DECRYPTOR_RESULT_CODE_DECRYPTION_FAILURE 1
+#define DAVE_MAX_DECRYPTORS 256
+#define DAVE_MAX_SSRC_MAP   256
+#define DAVE_MAX_USERS      256
+#define DAVE_MAGIC_BYTES    0xFAFA
 
 enum {
     DAVE_MLS_EXTERNAL_SENDER = 25,
@@ -71,44 +67,3 @@ typedef struct {
     void* m_impl;
     void* user_data;
 } DaveBinarySlotObject;
-
-typedef void* DAVESessionHandle;
-typedef void* DAVECommitResultHandle;
-typedef void* DAVEWelcomeResultHandle;
-typedef void* DAVEKeyRatchetHandle;
-typedef void* DAVEEncryptorHandle;
-typedef void* DAVEDecryptorHandle;
-
-typedef void (*DAVEMLSFailureCallback)(const char* source, const char* reason, void* userData);
-
-extern DAVESessionHandle       daveSessionCreate(void* context, const char* authSessionId, DAVEMLSFailureCallback callback, void* userData);
-extern void                    daveSessionDestroy(DAVESessionHandle session);
-extern void                    daveSessionInit(DAVESessionHandle session, u16 version, u64 groupId, const char* selfUserId);
-extern void                    daveSessionReset(DAVESessionHandle session);
-extern void                    daveSessionSetExternalSender(DAVESessionHandle session, const u8* data, size_t length);
-extern void                    daveSessionProcessProposals(DAVESessionHandle session, const u8* proposals, size_t length, const char** recognizedUserIds, size_t recognizedUserIdsLength, u8** commitWelcomeBytes, size_t* commitWelcomeBytesLength);
-extern DAVECommitResultHandle  daveSessionProcessCommit(DAVESessionHandle session, const u8* commit, size_t length);
-extern DAVEWelcomeResultHandle daveSessionProcessWelcome(DAVESessionHandle session, const u8* welcome, size_t length, const char** recognizedUserIds, size_t recognizedUserIdsLength);
-extern void                    daveSessionGetMarshalledKeyPackage(DAVESessionHandle session, u8** keyPackage, size_t* length);
-extern DAVEKeyRatchetHandle    daveSessionGetKeyRatchet(DAVESessionHandle session, const char* userId);
-
-extern u8   daveCommitResultIsFailed(DAVECommitResultHandle handle);
-extern u8   daveCommitResultIsIgnored(DAVECommitResultHandle handle);
-extern void daveCommitResultDestroy(DAVECommitResultHandle handle);
-
-extern void daveWelcomeResultDestroy(DAVEWelcomeResultHandle handle);
-
-extern void daveKeyRatchetDestroy(DAVEKeyRatchetHandle ratchet);
-
-extern DAVEEncryptorHandle daveEncryptorCreate(void);
-extern void                daveEncryptorDestroy(DAVEEncryptorHandle encryptor);
-extern void                daveEncryptorSetKeyRatchet(DAVEEncryptorHandle encryptor, DAVEKeyRatchetHandle ratchet);
-extern void                daveEncryptorAssignSsrcToCodec(DAVEEncryptorHandle encryptor, u32 ssrc, i32 codecType);
-extern i32                 daveEncryptorEncrypt(DAVEEncryptorHandle encryptor, i32 mediaType, u32 ssrc, const u8* frame, size_t frameLength, u8* encryptedFrame, size_t encryptedFrameCapacity, size_t* bytesWritten);
-
-extern DAVEDecryptorHandle daveDecryptorCreate(void);
-extern void                daveDecryptorDestroy(DAVEDecryptorHandle decryptor);
-extern void                daveDecryptorTransitionToKeyRatchet(DAVEDecryptorHandle decryptor, DAVEKeyRatchetHandle ratchet);
-extern i32                 daveDecryptorDecrypt(DAVEDecryptorHandle decryptor, i32 mediaType, const u8* encryptedFrame, size_t encryptedFrameLength, u8* frame, size_t frameCapacity, size_t* bytesWritten);
-
-extern void daveFree(void* ptr);
