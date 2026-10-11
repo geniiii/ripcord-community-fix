@@ -195,11 +195,11 @@ static void SendVoiceIdentify(DisVLWorker* vc) {
     char json[1024];
     i32  len = snprintf(json, sizeof json,
                         "{\"op\":0,\"d\":{\"server_id\":\"%llu\",\"user_id\":\"%llu\","
-                         "\"session_id\":\"%s\",\"token\":\"%s\",\"video\":true"
-                         "%s}}",
+                         "\"session_id\":\"%.*s\",\"token\":\"%.*s\",\"video\":true,"
+                         "\"max_dave_protocol_version\":1}}",
                         serverId, userId,
-                        QByteArrayConstData(&sid), QByteArrayConstData(&tok),
-                        ",\"max_dave_protocol_version\":1");
+                        QByteArraySize(&sid), QByteArrayConstData(&sid),
+                        QByteArraySize(&tok), QByteArrayConstData(&tok));
 
     qbytearray_destructor(&sid);
     qbytearray_destructor(&tok);

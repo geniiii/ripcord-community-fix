@@ -17,10 +17,16 @@ static void DebugMsg(const char* fmt, ...) {
     char    buf[2048];
     va_list args;
     va_start(args, fmt);
-    vsnprintf(buf, sizeof buf, fmt, args);
+    i32 size = vsnprintf(buf, sizeof buf, fmt, args);
     va_end(args);
+    if (size < 0) {
+        return;
+    }
+    if (size >= (i32) sizeof buf) {
+        size = sizeof buf - 1;
+    }
     OutputDebugStringA(buf);
-    fprintf(stderr, "[%.*s] %s", time_size, time_buf, buf);
+    fprintf(stderr, "[%.*s] %.*s", time_size, time_buf, size, buf);
 }
 
 static u32 JsmnEq(const char* json, const jsmntok_t* tok, String8 s) {
