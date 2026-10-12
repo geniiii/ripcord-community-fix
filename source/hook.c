@@ -830,12 +830,12 @@ static u32 CreateAndEnableHook(u8* base, u64 ptr, void* hook, void** orig) {
 
     MH_STATUS status;
     if ((status = MH_CreateHook(base + ptr, hook, orig)) != MH_OK) {
-        sprintf(buffer, "Failed to create hook at 0x%llX\nError code: %d", ptr, status);
+        snprintf(buffer, sizeof buffer, "Failed to create hook at 0x%llX\nError code: %d", ptr, status);
         ErrorMessage(buffer);
         return 0;
     }
     if ((status = MH_EnableHook(base + ptr)) != MH_OK) {
-        sprintf(buffer, "Failed to enable hook at 0x%llX\nError code: %d", ptr, status);
+        snprintf(buffer, sizeof buffer, "Failed to enable hook at 0x%llX\nError code: %d", ptr, status);
         ErrorMessage(buffer);
         return 0;
     }
