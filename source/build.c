@@ -55,7 +55,7 @@ typedef uintptr_t uptr;
 
 #define SUPPORTED_VERSION     "0.4.29"
 
-#define VERSION               "1.10.0"
+#define VERSION               "1.11.0"
 
 #define JSMN_STATIC
 #include "ext/jsmn.h"
