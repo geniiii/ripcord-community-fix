@@ -53,7 +53,6 @@ typedef uintptr_t uptr;
 #define ReadU16BE(a)          ((u16) (((a)[0] << 8) | (a)[1]))
 #define ReadU32BE(a)          (((u32) (a)[0] << 24) | ((u32) (a)[1] << 16) | ((u32) (a)[2] << 8) | (u32) (a)[3])
 
-#define HIJACKED_DLL          "winmm.dll"
 #define SUPPORTED_VERSION     "0.4.29"
 
 #define VERSION               "1.10.0"
