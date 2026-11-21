@@ -40,35 +40,40 @@ static ERF_MAP_FIND(ErfMapFindHook) {
         .size = key_size,
     };
 
-    if (result && S8Equals(key_s8, S8Lit("type")) &&
+    if (!result) {
+        return result;
+    }
+
+    if (S8Equals(key_s8, S8Lit("type")) &&
         out->tag == ErfTag_Int32 && out->int32 == DisChannelType_GuildVoiceStage) {
         out->int32 = DisChannelType_GuildVoice;
-    } else {
-        ErfMapAny new_out = {
-            .tag = ErfTag_Nil,
-        };
-        // NOTE(geni): We can probably just check return address instead and it would probably be faster
-        if (map && S8Equals(key_s8, S8Lit("guild_positions")) &&
-            erf_map_find(map, "guild_folders", 13, &new_out) &&
-            new_out.tag == ErfTag_Arr) {
-            ErfArr arr          = new_out.arr;
-            ErfMap guild_folder = {0};
-            guilds_count        = 0;
-            for (i32 i = 0; i < arr.count; ++i) {
-                erf_arr_at(&arr, &new_out, i);
-                if (new_out.tag != ErfTag_Map) {
-                    continue;
-                }
-                guild_folder = new_out.map;
+        return result;
+    }
 
-                if (erf_map_find(&guild_folder, "guild_ids", 9, &new_out) && new_out.tag == ErfTag_Arr) {
-                    ErfArr guild_ids = new_out.arr;
-                    for (i32 j = 0; j < guild_ids.count; ++j) {
-                        erf_arr_at(&guild_ids, &new_out, j);
-                        if (new_out.tag == ErfTag_Uint64 && guilds_count < ArrayCount(guilds)) {
-                            u64 guild_id           = new_out.uint64;
-                            guilds[guilds_count++] = guild_id;
-                        }
+    ErfMapAny new_out = {
+        .tag = ErfTag_Nil,
+    };
+    // NOTE(geni): We can probably just check return address instead and it would probably be faster
+    if (map && S8Equals(key_s8, S8Lit("guild_positions")) &&
+        erf_map_find(map, "guild_folders", 13, &new_out) &&
+        new_out.tag == ErfTag_Arr) {
+        ErfArr arr          = new_out.arr;
+        ErfMap guild_folder = {0};
+        guilds_count        = 0;
+        for (i32 i = 0; i < arr.count; ++i) {
+            erf_arr_at(&arr, &new_out, i);
+            if (new_out.tag != ErfTag_Map) {
+                continue;
+            }
+            guild_folder = new_out.map;
+
+            if (erf_map_find(&guild_folder, "guild_ids", 9, &new_out) && new_out.tag == ErfTag_Arr) {
+                ErfArr guild_ids = new_out.arr;
+                for (i32 j = 0; j < guild_ids.count; ++j) {
+                    erf_arr_at(&guild_ids, &new_out, j);
+                    if (new_out.tag == ErfTag_Uint64 && guilds_count < ArrayCount(guilds)) {
+                        u64 guild_id           = new_out.uint64;
+                        guilds[guilds_count++] = guild_id;
                     }
                 }
             }
