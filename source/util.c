@@ -4,7 +4,7 @@ static void ErrorMessage(const char* fmt, ...) {
     va_start(args, fmt);
     vsnprintf(buf, sizeof buf, fmt, args);
     va_end(args);
-    MessageBoxA(0, buf, "Audio Hook Failure", MB_ICONERROR);
+    MessageBoxA(0, buf, "Ripcord Community Fix Failure", MB_ICONERROR);
 }
 
 static void DebugMsg(const char* fmt, ...) {
@@ -17,12 +17,8 @@ static void DebugMsg(const char* fmt, ...) {
 
     va_list args;
     va_start(args, fmt);
-    i32 msg_size = vsnprintf(buf + size, sizeof buf - size - 1, fmt, args);
+    size += vsnprintf(buf + size, sizeof buf - size - 1, fmt, args);
     va_end(args);
-    if (msg_size < 0) {
-        return;
-    }
-    size += msg_size;
     if (size > (i32) sizeof buf - 2) {
         size = sizeof buf - 2;
     }
@@ -30,6 +26,8 @@ static void DebugMsg(const char* fmt, ...) {
     buf[size]   = 0;
 
     OutputDebugStringA(buf);
+#if BUILD_DEBUG
     DWORD written;
     WriteFile(GetStdHandle(STD_ERROR_HANDLE), buf, (DWORD) size, &written, NULL);
+#endif
 }
