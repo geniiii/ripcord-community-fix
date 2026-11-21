@@ -2,6 +2,12 @@
 typedef struct QJsonPrivate_Data  QJsonPrivate_Data;
 typedef struct QJsonPrivate_Array QJsonPrivate_Array;
 
+typedef struct {
+    void* vtable;
+    void* d_ptr;
+} QObject;
+static_assert(sizeof(QObject) == 0x10);
+
 typedef struct
 {
     QJsonPrivate_Data*  d;

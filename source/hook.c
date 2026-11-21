@@ -104,6 +104,12 @@ static u32 LoadHooks() {
     result &= CreateAndEnableHook(rip_base, 0xD4C20 + 0xC00, (LPVOID) &HeartbeatLambdaImplHook, (LPVOID*) &heartbeat_lambda_impl);
     result &= CreateAndEnableHook(rip_base, 0xB5EF0, (LPVOID) &DedStepHook, (LPVOID*) &ded_step);
 
+    result &= CreateAndEnableHook(rip_base, 0x14260, (LPVOID) &RipSbarDisStmtsConstructorHook, (LPVOID*) &ripsbar_disstmts_constructor);
+    result &= CreateAndEnableHook(rip_base, 0x1CDF0, (LPVOID) &RipSbarDisChangesHook, (LPVOID*) &ripsbar_dischanges);
+
+    ripsbar_query_and_create_discord_items = (RipSbarQueryAndCreateDiscordItemsType*) (rip_base + 0x271B0);
+    g_dis_client                           = (DisClient**) (rip_base + 0x660550);
+
     voice_data_append         = (VoiceDataAppendType*) (rip_base + 0xD0DF0);
     disdbprepared_begintx     = (DisDbPreparedBegintxType*) (rip_base + 0xF62E0);
     disdbprepared_endtx       = (DisDbPreparedEndtxType*) (rip_base + 0xF7070);

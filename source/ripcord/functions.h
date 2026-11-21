@@ -19,7 +19,7 @@ typedef RIPSTMT_DESTRUCTOR(RipStmtDestructorType);
 #define RIPSTMT_BIND_U64(name) void name(RipStmt* this, i32 index, u64 value)
 typedef RIPSTMT_BIND_U64(RipStmtBindU64Type);
 
-#define RIPSTMT_STEP(name) void name(RipStmt* this)
+#define RIPSTMT_STEP(name) u8 name(RipStmt* this)
 typedef RIPSTMT_STEP(RipStmtStepType);
 
 #define RIPSTMT_RESET(name) void name(RipStmt* this)
@@ -58,6 +58,15 @@ typedef VOICE_CONN_WS_CONNECTED(VoiceConnWSConnectedType);
 #define VOICE_CONN_TEXT_MSG_RECEIVED(name) void name(DisVLWorker* vw, const QString* text)
 typedef VOICE_CONN_TEXT_MSG_RECEIVED(VoiceConnTextMsgReceivedType);
 
+#define RIPSBAR_DISSTMTS_CONSTRUCTOR(name) RipSbarDisStmts* name(RipSbarDisStmts* this)
+typedef RIPSBAR_DISSTMTS_CONSTRUCTOR(RipSbarDisStmtsConstructorType);
+
+#define RIPSBAR_DISCHANGES(name) void name(RipSbarView* v, const DisChanges* changes)
+typedef RIPSBAR_DISCHANGES(RipSbarDisChangesType);
+
+#define RIPSBAR_QUERY_AND_CREATE_DISCORD_ITEMS(name) void name(RipSbarView* v)
+typedef RIPSBAR_QUERY_AND_CREATE_DISCORD_ITEMS(RipSbarQueryAndCreateDiscordItemsType);
+
 #define DED_STEP(name) DedResult* name(DedResult* result, DedState* s)
 typedef DED_STEP(DedStepType);
 
@@ -77,6 +86,10 @@ static ReadVoiceDataPacketType*                 read_voice_data_packet;
 static SendSpeakingStateType*                   send_speaking_state;
 static SendVoiceDatagramType*                   send_voice_datagram;
 static DisVLWorkerConstructorType*              disvlworker_constructor;
+static RipSbarDisStmtsConstructorType*          ripsbar_disstmts_constructor;
+static RipSbarDisChangesType*                   ripsbar_dischanges;
+static RipSbarQueryAndCreateDiscordItemsType*   ripsbar_query_and_create_discord_items;
+static DisClient**                              g_dis_client;
 static EmptyVoicePacketSendType*                empty_voice_packet_send;
 static DisVoiceEncodeCreateEncodingContextType* disvoiceencode_createencodingcontext;
 static VoiceConnWSConnectedType*                voice_conn_ws_connected;

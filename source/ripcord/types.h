@@ -138,6 +138,87 @@ typedef struct
 } DisDbPrepared;
 static_assert(sizeof(DisDbPrepared) == 0x1F0);
 
+typedef struct {
+    QObject base;
+    void*   db;
+    void*   d;
+} DisClient;
+static_assert(offsetof(DisClient, db) == 0x10);
+static_assert(sizeof(DisClient) == 0x20);
+
+//~ Sidebar
+
+typedef struct {
+    RipStmt all_guild_ids;
+    RipStmt all_guild_text_channel_ids;
+    RipStmt all_guild_voice_channel_ids;
+    RipStmt all_guild_channel_category_ids;
+    RipStmt priv_chan_ids_for_user;
+    RipStmt users_in_voice_channel_q;
+    RipStmt private_chans_sort;
+    RipStmt guild_text_chans_sort_q;
+    RipStmt guild_voice_chans_sort_q;
+    RipStmt guild_chan_cats_sort_q;
+    RipStmt discord_guilds_as_user_sort;
+} RipSbarDisStmts;
+static_assert(sizeof(RipSbarDisStmts) == 0x58);
+
+typedef struct {
+    Pad(0x2D0);
+    FlakeId own_user_id;
+} RipSbarViewPriv;
+static_assert(offsetof(RipSbarViewPriv, own_user_id) == 0x2D0);
+
+typedef struct {
+    Pad(0x60);
+    RipSbarViewPriv* priv;
+} RipSbarView;
+static_assert(offsetof(RipSbarView, priv) == 0x60);
+
+typedef u32 DisChangeType;
+enum {
+    DisChangeType_ChannelUpdated     = 1,
+    DisChangeType_GuildMemberAdded   = 10,
+    DisChangeType_GuildMemberUpdated = 11,
+    DisChangeType_GuildMemberRemoved = 12,
+    DisChangeType_GuildRoleCreated   = 15,
+    DisChangeType_GuildRoleUpdated   = 16,
+    DisChangeType_GuildRoleDeleted   = 17,
+    DisChangeType_OverflowFlag       = 24,
+};
+
+typedef struct {
+    union {
+        struct {
+            FlakeId guild_id;
+            FlakeId user_id;
+        } member;
+        u8 data[0x18];
+    };
+    DisChangeType type;
+    Pad(4);
+} DisChange;
+static_assert(sizeof(DisChange) == 0x20);
+static_assert(offsetof(DisChange, type) == 0x18);
+
+typedef struct {
+    i32        a;
+    i32        s;
+    DisChange* ptr;
+    DisChange  storage[32];
+} QVarLengthArray_DisChange_32;
+static_assert(sizeof(QVarLengthArray_DisChange_32) == 0x410);
+
+typedef struct {
+    QVarLengthArray_DisChange_32 items;
+    u8                           extras[0x28];
+    u32                          flags;
+    Pad(4);
+} DisChanges;
+static_assert(offsetof(DisChanges, extras) == 0x410);
+static_assert(offsetof(DisChanges, flags) == 0x438);
+static_assert(sizeof(DisChanges) == 0x440);
+
 //~ Voice
 
 typedef struct {
