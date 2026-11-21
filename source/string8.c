@@ -62,6 +62,49 @@ static u32 S8ConsumeU8(String8* s, u8* out) {
     return i > 0;
 }
 
+static u32 S8ParseU64(String8 s, u64* out) {
+    if (s.size == 0) {
+        return 0;
+    }
+
+    u64 value = 0;
+    for (u64 i = 0; i < s.size; ++i) {
+        u8 digit = (u8) (s.s[i] - '0');
+        if (digit > 9) {
+            return 0;
+        }
+        value = value * 10 + digit;
+    }
+
+    *out = value;
+    return 1;
+}
+
+static u32 S8ParseU32(String8 s, u32* out) {
+    u64 value;
+    if (!S8ParseU64(s, &value)) {
+        return 0;
+    }
+
+    *out = (u32) value;
+    return 1;
+}
+
+static u32 S8ParseI32(String8 s, i32* out) {
+    u32 negative = S8ConsumePrefix(&s, S8Lit("-"));
+
+    u64 value;
+    if (!S8ParseU64(s, &value)) {
+        return 0;
+    }
+    if (negative) {
+        value = 0 - value;
+    }
+
+    *out = (i32) value;
+    return 1;
+}
+
 // NOTE(geni): Stolen from https://lemire.me/blog/2021/11/18/converting-integers-to-fix-digit-representations-quickly/
 static u64 EncodeTenThousands(u64 hi, u64 lo) {
     u64 merged   = hi | (lo << 32);
