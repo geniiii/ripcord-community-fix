@@ -26,17 +26,17 @@ static void HandleDaveAnnounceCommit(u8* data, size_t len) {
 
     DAVECommitResultHandle result = daveSessionProcessCommit(g_dave.session, commit_data, commit_len);
     if (!result) {
-        DebugMsg("ProcessCommit ignored\n");
+        DebugMsg("ProcessCommit ignored");
         return;
     }
 
     if (daveCommitResultIsFailed(result)) {
-        DebugMsg("ProcessCommit failed\n");
+        DebugMsg("ProcessCommit failed");
         DaveRejectTransition(transition_id);
     } else if (daveCommitResultIsIgnored(result)) {
-        DebugMsg("ProcessCommit ignored\n");
+        DebugMsg("ProcessCommit ignored");
     } else {
-        DebugMsg("ProcessCommit succeeded: transition_id=%d\n", transition_id);
+        DebugMsg("ProcessCommit succeeded: transition_id=%d", transition_id);
         DavePrepareTransition((u16) transition_id, daveSessionGetProtocolVersion(g_dave.session));
     }
     daveCommitResultDestroy(result);
@@ -56,12 +56,12 @@ static void HandleDaveWelcome(u8* data, size_t len) {
     DAVEWelcomeResultHandle result = daveSessionProcessWelcome(g_dave.session, welcome_data, welcome_len,
                                                                recognized.ptrs, recognized.count);
     if (!result) {
-        DebugMsg("ProcessWelcome failed\n");
+        DebugMsg("ProcessWelcome failed");
         DaveRejectTransition(transition_id);
         return;
     }
 
-    DebugMsg("ProcessWelcome succeeded: transition_id=%d\n", transition_id);
+    DebugMsg("ProcessWelcome succeeded: transition_id=%d", transition_id);
     DavePrepareTransition((u16) transition_id, daveSessionGetProtocolVersion(g_dave.session));
     daveWelcomeResultDestroy(result);
 }
@@ -70,7 +70,7 @@ static void HandleDaveBinaryMsg(QByteArray* data) {
     u8* raw = (u8*) QByteArrayConstData(data);
     i32 len = QByteArraySize(data);
     if (len < (i32) sizeof(DaveBinaryHeader)) {
-        DebugMsg("DaveBinaryMsg too short: %d bytes\n", len);
+        DebugMsg("DaveBinaryMsg too short: %d bytes", len);
         return;
     }
 
@@ -98,7 +98,7 @@ static void HandleDaveBinaryMsg(QByteArray* data) {
         } break;
 
         default: {
-            DebugMsg("Unhandled binary opcode %d\n", hdr->opcode);
+            DebugMsg("Unhandled binary opcode %d", hdr->opcode);
         } break;
     }
 }
