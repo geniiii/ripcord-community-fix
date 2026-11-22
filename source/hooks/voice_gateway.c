@@ -54,10 +54,7 @@ typedef struct {
     DisVLWorker* vlWorker;
 } HeartbeatLambdaCapture;
 
-typedef void (*DisClientImpl_HeartbeatLambdaImplType)(i32 which, void* this_, void* r, void** a);
-static DisClientImpl_HeartbeatLambdaImplType DisClientImpl_HeartbeatLambdaImpl;
-
-static void DisClientImpl_HeartbeatLambdaImplHook(i32 which, void* this_, void* r, void** a) {
+static DISCLIENTIMPL_HEARTBEATLAMBDAIMPL(DisClientImpl_HeartbeatLambdaImplHook) {
     if (which != 1) {
         DisClientImpl_HeartbeatLambdaImpl(which, this_, r, a);
         return;
