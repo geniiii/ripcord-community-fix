@@ -25,7 +25,10 @@
 #include <Ntsecapi.h>
 #include <winhttp.h>
 #include <shellapi.h>
-#include "ext/minhook/MinHook.c"
+#include "ext/minhook/src/hde/hde64.c"
+#include "ext/minhook/src/buffer.c"
+#include "ext/minhook/src/hook.c"
+#include "ext/minhook/src/trampoline.c"
 #include <stdint.h>
 #include <stdio.h>
 #include <assert.h>

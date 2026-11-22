@@ -1,3 +1,6 @@
 [submodule "libdave"]
 path = source/ext/libdave
 url = https://github.com/discord/libdave.git
+[submodule "source/ext/minhook"]
+	path = source/ext/minhook
+	url = https://github.com/TsudaKageyu/minhook.git
