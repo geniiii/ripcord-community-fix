@@ -1,0 +1,12 @@
+{
+  "name": "openssl",
+  "version": "3.6.5",
+  "license": "Apache-2.0",
+  "supports": "windows & x64 & static",
+  "dependencies": [
+    {
+      "name": "vcpkg-cmake-get-vars",
+      "host": true
+    }
+  ]
+}

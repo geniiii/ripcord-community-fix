@@ -16,8 +16,8 @@ if /i "%build_type%"=="debug" (
 ) else (
     set CMAKE_CONFIG=Release
     set CMAKE_RUNTIME=MultiThreaded
-    set MSVC_RUNTIME=/MT /O2
-    set LINK_DEBUG=/Debug:none
+    set MSVC_RUNTIME=/MT /O2 /Gy /Gw
+    set LINK_DEBUG=/Debug:none /OPT:ICF
     set build_options=%build_options% /DBUILD_DEBUG=0
     set VCPKG_LIB_DIR=../source/ext/libdave/cpp/build_Release/vcpkg_installed/x64-windows-static/lib
 )
@@ -54,7 +54,7 @@ if not exist "%DAVE_LIB_PATH%" (
     -DBUILD_SHARED_LIBS=OFF ^
     -DCMAKE_C_COMPILER=cl ^
     -DCMAKE_CXX_COMPILER=cl ^
-    -DVCPKG_MANIFEST_DIR="!CD!\vcpkg-alts\openssl_3" ^
+    -DVCPKG_MANIFEST_DIR="%~dp0vcpkg" ^
     -DCMAKE_TOOLCHAIN_FILE="!CD!\vcpkg\scripts\buildsystems\vcpkg.cmake" ^
     -DVCPKG_TARGET_TRIPLET=x64-windows-static ^
     -DVCPKG_TARGET_ARCHITECTURE=x86_64 ^

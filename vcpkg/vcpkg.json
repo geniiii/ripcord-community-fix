@@ -1,0 +1,14 @@
+{
+  "name": "ripcord-hook-deps",
+  "dependencies": [
+    "openssl",
+    "mlspp"
+  ],
+  "builtin-baseline": "d07689ef165f033de5c0710e4f67c193a85373e1",
+  "vcpkg-configuration": {
+    "overlay-ports": [
+      "./overlay-ports",
+      "../source/ext/libdave/cpp/vcpkg-alts/openssl_3/overlay-ports"
+    ]
+  }
+}

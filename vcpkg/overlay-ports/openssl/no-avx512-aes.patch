@@ -1,0 +1,22 @@
+--- a/crypto/aes/asm/aesni-xts-avx512.pl
++++ b/crypto/aes/asm/aesni-xts-avx512.pl
+@@ -72,7 +72,7 @@
+ 
+ #======================================================================
+ 
+-if ($avx512vaes) {
++if (0) {
+ 
+   my $GP_STORAGE  = $win64 ? (16 * 18)  : (16 * 8);    # store rbx
+   my $XMM_STORAGE = $win64 ? (16 * 8) : 0;     # store xmm6:xmm15
+--- a/crypto/modes/asm/aes-gcm-avx512.pl
++++ b/crypto/modes/asm/aes-gcm-avx512.pl
+@@ -84,7 +84,7 @@
+ *STDOUT = *OUT;
+ 
+ #======================================================================
+-if ($avx512vaes>0) { #<<<
++if (0) { #<<<
+ 
+ $code .= <<___;
+ .extern OPENSSL_ia32cap_P
