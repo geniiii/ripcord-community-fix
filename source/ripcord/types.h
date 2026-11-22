@@ -28,6 +28,16 @@ typedef enum {
     DisChannelType_GuildVoiceStage = 13,
 } DisChannelType;
 
+typedef enum {
+    DisRelationshipAction_AddFriend,
+    DisRelationshipAction_RemoveFriend,
+    DisRelationshipAction_AcceptFriendRequest,
+    DisRelationshipAction_CancelFriendRequest,
+    DisRelationshipAction_DenyFriendRequest,
+    DisRelationshipAction_Block,
+    DisRelationshipAction_Unblock,
+} DisRelationshipAction;
+
 typedef struct {
     const char* data;
     i32         length;

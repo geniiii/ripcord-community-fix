@@ -93,5 +93,6 @@ typedef uintptr_t uptr;
 #include "hooks/voice_send.c"
 #include "hooks/voice_receive.c"
 #include "hooks/ded.c"
+#include "hooks/restrict.c"
 #include "hook.c"
 #include "main.c"

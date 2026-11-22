@@ -91,6 +91,11 @@ static u32 Hook_Init() {
     Hook_PatchString(rip_base, 0x3DFDE8, S8Lit("(user.name)--"));
     Hook_PatchString(rip_base, 0x3DFF41, S8Lit("(user.name)--"));
 
+    // NOTE(geni): Don't add "Accept Invite..." to the Discord menu
+    for (u32 i = 0; i < 6; ++i) {
+        Hook_PatchByte(rip_base, 0x14C7D0 + i, 0x90);
+    }
+
     HMODULE qt5core       = GetModuleHandleA("Qt5Core.dll");
     HMODULE qt5network    = GetModuleHandleA("Qt5Network.dll");
     HMODULE sodium        = GetModuleHandleA("libsodium.dll");
