@@ -21,7 +21,7 @@ static DISDB_UPDATEADDGUILDCHANNELJSON(DisDb_UpdateAddGuildChannelJsonHook) {
 
 //~ Resync
 
-static void Sidebar_SendResync(DisSessionWorker* w, u64 guild_id) {
+static void Sidebar_SendResync(DisSessionWorker* w, u64 guild_id, String8 reason) {
     QJsonArray ids;
     QJsonArray_Constructor(&ids);
     u32 count = Db_QueryFlakes(&ids, w->common_stmts,
@@ -30,9 +30,11 @@ static void Sidebar_SendResync(DisSessionWorker* w, u64 guild_id) {
                                "union all select id from guild_channel_category where guild_id = ?1 and deleted = 2",
                                DISCORD_MAX_GUILD_CHANNELS, guild_id);
     if (!count) {
+        Log_Debug("Resync (%.*s) for guild %llu skipped: no hidden channels", S8VArg(reason), guild_id);
         QJsonArray_Destructor(&ids);
         return;
     }
+    Log_Debug("Resync (%.*s) for guild %llu: %u hidden channels", S8VArg(reason), guild_id, count);
 
     QJsonObject d;
     QJsonObject_Constructor(&d);
@@ -49,8 +51,10 @@ static void Sidebar_ApplyChannelSync(DisSessionWorker* w, ErfMap* data) {
     };
     ErfMapAny channels;
     if (!Erf_GetOfType(data, S8Lit("channels"), ErfTag_Arr, &channels)) {
+        Log_Debug("CHANNEL_SYNC for guild %llu has no channels array", guild_id.u);
         return;
     }
+    Log_Debug("CHANNEL_SYNC for guild %llu: %d channels", guild_id.u, channels.arr.count);
 
     // NOTE(geni): Have Ripcord replace the channel rows (hence clearing the deleted column)
     DisDbPrepared_BeginTx(w->common_stmts);
@@ -112,15 +116,15 @@ static DISCLIENTIMPL_PROCESSGATEWAYMESSAGE(DisClientImpl_ProcessGatewayMessageHo
         // NOTE(geni): Role changes can show or hide channels too, so we resync
         case GatewayEvent_GuildRoleUpdate: {
             if (Sidebar_IsOwnRoleUpdate(w, guild_id, &d.map)) {
-                Sidebar_SendResync(w, guild_id);
+                Sidebar_SendResync(w, guild_id, S8Lit("GUILD_ROLE_UPDATE"));
             }
         } break;
         case GatewayEvent_GuildRoleDelete: {
-            Sidebar_SendResync(w, guild_id);
+            Sidebar_SendResync(w, guild_id, S8Lit("GUILD_ROLE_DELETE"));
         } break;
         case GatewayEvent_GuildMemberUpdate: {
             if (Sidebar_IsOwnMemberUpdate(w, &d.map)) {
-                Sidebar_SendResync(w, guild_id);
+                Sidebar_SendResync(w, guild_id, S8Lit("GUILD_MEMBER_UPDATE"));
             }
         } break;
     }
