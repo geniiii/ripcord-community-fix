@@ -9,17 +9,6 @@ static void Sidebar_HideGuildChannel(DisDbPrepared* stmts, u64 channel_id) {
     }
 }
 
-static void Sidebar_HideGuildChannels(DisDbPrepared* stmts, u64 guild_id) {
-    static const char* const sqls[] = {
-        "update guild_channel set deleted = 2 where deleted = 0 and guild_id = ?",
-        "update guild_voice_channel set deleted = 2 where deleted = 0 and guild_id = ?",
-        "update guild_channel_category set deleted = 2 where deleted = 0 and guild_id = ?",
-    };
-    for (u32 i = 0; i < ArrayCount(sqls); ++i) {
-        Db_ExecU64(stmts, sqls[i], guild_id);
-    }
-}
-
 static DISDB_UPDATEADDGUILDCHANNELJSON(DisDb_UpdateAddGuildChannelJsonHook) {
     DisDb_UpdateAddGuildChannelJson(comStmts, chanMap, guildId);
 
@@ -32,15 +21,18 @@ static DISDB_UPDATEADDGUILDCHANNELJSON(DisDb_UpdateAddGuildChannelJsonHook) {
 
 //~ Resync
 
-// NOTE(geni): We just ask for every guild channel lol
 static void Sidebar_SendResync(DisSessionWorker* w, u64 guild_id) {
     QJsonArray ids;
     QJsonArray_Constructor(&ids);
-    Db_QueryFlakes(&ids, w->common_stmts,
-                   "select id from guild_channel where guild_id = ?1 and deleted != 1\n"
-                   "union all select id from guild_voice_channel where guild_id = ?1 and deleted != 1\n"
-                   "union all select id from guild_channel_category where guild_id = ?1 and deleted != 1",
-                   DISCORD_MAX_GUILD_CHANNELS, guild_id);
+    u32 count = Db_QueryFlakes(&ids, w->common_stmts,
+                               "select id from guild_channel where guild_id = ?1 and deleted = 2\n"
+                               "union all select id from guild_voice_channel where guild_id = ?1 and deleted = 2\n"
+                               "union all select id from guild_channel_category where guild_id = ?1 and deleted = 2",
+                               DISCORD_MAX_GUILD_CHANNELS, guild_id);
+    if (!count) {
+        QJsonArray_Destructor(&ids);
+        return;
+    }
 
     QJsonObject d;
     QJsonObject_Constructor(&d);
@@ -60,9 +52,8 @@ static void Sidebar_ApplyChannelSync(DisSessionWorker* w, ErfMap* data) {
         return;
     }
 
-    // NOTE(geni): Hide everything and have Ripcord replace the channel rows (hence clearing the deleted column)
+    // NOTE(geni): Have Ripcord replace the channel rows (hence clearing the deleted column)
     DisDbPrepared_BeginTx(w->common_stmts);
-    Sidebar_HideGuildChannels(w->common_stmts, guild_id.u);
     for (i32 i = 0; i < channels.arr.count; ++i) {
         ErfMapAny channel;
         ErfArr_At(&channels.arr, &channel, i);

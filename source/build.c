@@ -86,7 +86,7 @@ typedef uintptr_t uptr;
 #include "hooks/guilds.c"
 #include "hooks/http.c"
 #include "hooks/gateway.c"
-// #include "hooks/sidebar.c"
+#include "hooks/sidebar.c"
 #include "hooks/voice_gateway.c"
 #include "hooks/voice_send.c"
 #include "hooks/voice_receive.c"
