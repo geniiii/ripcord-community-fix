@@ -56,15 +56,15 @@ static u32 Hook_Init() {
     Hook_PatchByte(rip_base, 0xDE936, 72);
 
     // NOTE(geni): Set voice gateway version to 8
-    Hook_PatchByte(rip_base, 0x3CDEB4 + 0x1200, '8');
+    Hook_PatchByte(rip_base, 0x3CF0B4, '8');
     // NOTE(geni): Patch "speaking" field check for v4 and later of voice gateway
     // NOTE(geni): Check for double instead of bool for "speaking" field
-    Hook_PatchByte(rip_base, 0xE605C + 0xC00, 0x83);
-    Hook_PatchByte(rip_base, 0xE605C + 0xC00 + 1, 0xF8);
-    Hook_PatchByte(rip_base, 0xE605C + 0xC00 + 2, 0x02);
+    Hook_PatchByte(rip_base, 0xE6C5C, 0x83);
+    Hook_PatchByte(rip_base, 0xE6C5C + 1, 0xF8);
+    Hook_PatchByte(rip_base, 0xE6C5C + 2, 0x02);
     // NOTE(geni): Call QJsonValue::toInt() instead of QJsonValue::toBool()
-    Hook_PatchByte(rip_base, 0xE6067 + 0xC00 + 2, 0x03);
-    Hook_PatchByte(rip_base, 0xE6067 + 0xC00 + 3, 0x76);
+    Hook_PatchByte(rip_base, 0xE6C67 + 2, 0x03);
+    Hook_PatchByte(rip_base, 0xE6C67 + 3, 0x76);
 
     // NOTE(geni): Fixes image previews not loading. Thanks u130b8!
     Hook_PatchString(rip_base, 0x3E63F8, S8Lit("cdn.discordapp.com/\0\0\0"));
