@@ -40,6 +40,7 @@
 #define DISCLIENT_CREATERELATIONSHIP(name)                 void name(void* this, FlakeId ownUserId, FlakeId otherUserId)
 #define DISINVITELINKVIEW_ISPOSSIBLYDISCORDINVITEURL(name) u8 name(const QString* urlText)
 #define DISCONTEXTMENUS_ADDRELATIONSHIPACTION(name)        void name(void* captures, DisRelationshipAction actionType)
+#define EVLOGGLOBAL_ADDLOGEVENT(name)                      void name(EvLogCategory cat, EvLogSeverity sev, const QString* msg)
 
 #define RIP_FN(name, sig, offset) \
     typedef sig(name##Type);      \

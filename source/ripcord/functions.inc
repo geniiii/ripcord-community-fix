@@ -42,3 +42,4 @@ RIP_FN(Erf_ConvertU64,                                 ERF_CONVERTU64,          
 RIP_FN(FlakeId_ToString,                               FLAKEID_TOSTRING,                             0x39A0)
 RIP_FN(WebSocketHelpers_SendJson,                      WEBSOCKETHELPERS_SENDJSON,                    0xE1A80)
 RIP_FN(WebSocketHelpers_SendJsonAsEtf,                 WEBSOCKETHELPERS_SENDJSON,                    0xE1B30)
+RIP_FN(EvLogGlobal_AddLogEvent,                        EVLOGGLOBAL_ADDLOGEVENT,                      0x8660)

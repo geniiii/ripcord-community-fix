@@ -164,6 +164,25 @@ typedef struct {
 } ChgsRef;
 static_assert(sizeof(ChgsRef) == 0x10);
 
+//~ Event log
+
+typedef u32 EvLogCategory;
+enum {
+    EvLogCategory_Application = 1,
+    EvLogCategory_Networking  = 2,
+    EvLogCategory_Images      = 4,
+    EvLogCategory_Audio       = 8,
+};
+
+typedef u8 EvLogSeverity;
+enum {
+    EvLogSeverity_Debug    = 0,
+    EvLogSeverity_Info     = 1,
+    EvLogSeverity_Warn     = 2,
+    EvLogSeverity_Error    = 3,
+    EvLogSeverity_Critical = 4,
+};
+
 //~ Gateway
 
 typedef u32 GatewayEvent;

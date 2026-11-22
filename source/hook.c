@@ -28,7 +28,7 @@ static void Hook_PatchString(u8* base, u64 ptr, String8 new) {
     DWORD old_protect;
     u8*   addr = base + ptr;
     VirtualProtect(addr, new.size, PAGE_EXECUTE_READWRITE, &old_protect);
-    CopyMemory(addr, new.data, new.size);
+    memcpy(addr, new.data, new.size);
     VirtualProtect(addr, new.size, old_protect, &old_protect);
 }
 
@@ -122,6 +122,8 @@ static u32 Hook_Init() {
 #include "ripcord/functions.inc"
 #undef RIP_FN
 #undef RIP_HOOK
+
+    g_rip_ev_logger = (void**) (rip_base + 0x4CCF28);
 
     crypto_aead_xchacha20poly1305_ietf_decrypt = (CryptoAeadXchacha20poly1305IetfDecryptType*) GetProcAddress(sodium, "crypto_aead_xchacha20poly1305_ietf_decrypt");
     crypto_aead_xchacha20poly1305_ietf_encrypt = (CryptoAeadXchacha20poly1305IetfEncryptType*) GetProcAddress(sodium, "crypto_aead_xchacha20poly1305_ietf_encrypt");

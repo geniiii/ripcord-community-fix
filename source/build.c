@@ -74,6 +74,7 @@ typedef uintptr_t uptr;
 #include "qt/json.c"
 #include "ripcord/db.c"
 #include "ripcord/erf.c"
+#include "ripcord/evlog.c"
 #include "op.c"
 #include "sodium.h"
 #include "dave/dave.h"
