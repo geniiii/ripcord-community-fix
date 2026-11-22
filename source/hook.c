@@ -88,6 +88,8 @@ static u32 Hook_Init() {
 #undef QT_FN
 #undef QT_HOOK
 
+    Client_Init();
+
 #define RIP_HOOK(name, sig, offset) result &= Hook_Create(rip_base, offset, (void*) &name##Hook, (void**) &name);
 #define RIP_FN(name, sig, offset)   name = (name##Type*) (rip_base + offset);
 #include "ripcord/functions.inc"

@@ -3,6 +3,7 @@ RIP_HOOK(Ded_Step,                                   DED_STEP,                  
 RIP_HOOK(DisDb_UpdateUserGuildPositions,             DISDB_UPDATEUSERGUILDPOSITIONS,             0xF9750)
 RIP_FN(DisDb_UpdateAddGuildChannelJson,              DISDB_UPDATEADDGUILDCHANNELJSON,            0xF88B0)
 RIP_FN(DisClientImpl_ProcessGatewayMessage,          DISCLIENTIMPL_PROCESSGATEWAYMESSAGE,        0xD6BC0)
+RIP_HOOK(DisClientImpl_SendIdentifyMessage,          DISCLIENTIMPL_SENDIDENTIFYMESSAGE,          0xE14E0)
 RIP_HOOK(DisClientImpl_VoiceEncStrings,              DISCLIENTIMPL_VOICEENCSTRINGS,              0xCAFB0)
 RIP_HOOK(DisClientImpl_ReadVoiceDataPacket,          DISCLIENTIMPL_READVOICEDATAPACKET,          0xDD850)
 RIP_HOOK(DisClientImpl_VoiceConnWebSocketConnected,  DISCLIENTIMPL_VOICECONNWEBSOCKETCONNECTED,  0xE6E80)

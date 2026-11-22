@@ -31,6 +31,7 @@
 #define DISCLIENTIMPL_HEARTBEATLAMBDAIMPL(name)          void name(i32 which, void* this_, void* r, void** a)
 #define DED_STEP(name)                                   DedResult* name(DedResult* result, DedState* s)
 #define WEBSOCKETHELPERS_SENDJSON(name)                  void name(void* webSocket, QJsonValue* jsonVal)
+#define DISCLIENTIMPL_SENDIDENTIFYMESSAGE(name)          void name(void* webSocket, QString* authToken, u8 useTransportCompression)
 
 #define RIP_FN(name, sig, offset) \
     typedef sig(name##Type);      \

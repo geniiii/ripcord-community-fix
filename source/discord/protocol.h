@@ -10,6 +10,10 @@ enum {
 };
 
 enum {
+    DiscordGatewayCapability_ChannelObfuscation = 1 << 15,
+};
+
+enum {
     VOICE_OP_IDENTIFY             = 0,
     VOICE_OP_READY                = 2,
     VOICE_OP_SESSION_DESCRIPTION  = 4,

@@ -82,6 +82,21 @@ typedef struct {
 static_assert(sizeof(QHostAddress) == 0x8);
 
 typedef struct {
+    void* d;
+} QUrl;
+static_assert(sizeof(QUrl) == 0x8);
+
+typedef struct {
+    void* d;
+} QNetworkRequest;
+static_assert(sizeof(QNetworkRequest) == 0x8);
+
+typedef struct {
+    void* d;
+} QJsonDocument;
+static_assert(sizeof(QJsonDocument) == 0x8);
+
+typedef struct {
     QTypedArrayData* d;
 } QByteArray;
 static_assert(sizeof(QByteArray) == 0x8);

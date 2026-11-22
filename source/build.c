@@ -84,6 +84,8 @@ typedef uintptr_t uptr;
 #include "dave/mls.c"
 #include "hooks/network.c"
 #include "hooks/guilds.c"
+#include "hooks/http.c"
+#include "hooks/gateway.c"
 // #include "hooks/sidebar.c"
 #include "hooks/voice_gateway.c"
 #include "hooks/voice_send.c"
