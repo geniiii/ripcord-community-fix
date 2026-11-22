@@ -2,7 +2,8 @@
 setlocal EnableDelayedExpansion
 
 set compiler=cl.exe
-set build_type=release
+set build_type=debug
+if /i "%~1"=="release" set build_type=release
 set arch=x64
 set build_options=/D_CRT_SECURE_NO_WARNINGS
 
