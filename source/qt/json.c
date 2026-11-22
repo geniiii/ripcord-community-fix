@@ -1,24 +1,39 @@
-static void QJsonInsert(QJsonObject* obj, String8 key, QJsonValue* value) {
+static void QJson_Insert(QJsonObject* obj, String8 key, QJsonValue* value) {
     QJsonObject_iterator it;
     QString              k;
-    k.d = qstring_from_ascii_helper(key.cstr, (i64) key.size);
-    qjsonobject_insert(obj, &it, &k, value);
-    qstring_destructor(&k);
-    qjsonvalue_destructor(value);
+    k.d = QString_FromAsciiHelper(key.cstr, (i64) key.size);
+    QJsonObject_Insert(obj, &it, &k, value);
+    QString_Destructor(&k);
+    QJsonValue_Destructor(value);
 }
 
-static void QJsonInsertInt(QJsonObject* obj, String8 key, i32 v) {
+static void QJson_InsertInt(QJsonObject* obj, String8 key, i32 v) {
     QJsonValue value;
-    QJsonInsert(obj, key, qjsonvalue_constructor_int(&value, v));
+    QJson_Insert(obj, key, QJsonValue_ConstructorInt(&value, v));
 }
 
-static void SendVoiceOp(void* webSocket, i32 op, QJsonObject* d) {
-    QJsonObject root;
-    QJsonValue  value;
-    qjsonobject_constructor(&root);
-    QJsonInsertInt(&root, S8Lit("op"), op);
-    QJsonInsert(&root, S8Lit("d"), qjsonvalue_constructor_qjsonobject(&value, d));
-    websockethelpers_sendjson(webSocket, qjsonvalue_constructor_qjsonobject(&value, &root));
-    qjsonobject_destructor(d);
-    qjsonobject_destructor(&root);
+static QJsonValue* QJson_FromFlake(QJsonValue* value, u64 id) {
+    FlakeId flake = {
+        .u = id,
+    };
+    QString str;
+    QJsonValue_ConstructorQString(value, FlakeId_ToString(&flake, &str));
+    QString_Destructor(&str);
+    return value;
+}
+
+static void QJson_InsertFlake(QJsonObject* obj, String8 key, u64 id) {
+    QJsonValue value;
+    QJson_Insert(obj, key, QJson_FromFlake(&value, id));
+}
+
+static void QJson_AppendFlake(QJsonArray* arr, u64 id) {
+    QJsonValue value;
+    QJsonArray_Append(arr, QJson_FromFlake(&value, id));
+    QJsonValue_Destructor(&value);
+}
+
+static void QJson_InsertArray(QJsonObject* obj, String8 key, QJsonArray* arr) {
+    QJsonValue value;
+    QJson_Insert(obj, key, QJsonValue_ConstructorQJsonArray(&value, arr));
 }

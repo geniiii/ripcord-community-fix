@@ -6,13 +6,13 @@
 #define RTP_EXTENSION_BIT         0b00010000
 #define RTP_PAYLOAD_TYPE_MASK     0b01111111
 
-static READVOICEDATAPACKET_WITHENCRYPTIONMODE(ReadVoiceDataPacketHook) {
+static DISCLIENTIMPL_READVOICEDATAPACKET(DisClientImpl_ReadVoiceDataPacketHook) {
     if (modeSpec == 0 || secretKey == NULL || size < RTP_HEADER_SIZE) {
         return;
     }
 
     if ((data[1] & RTP_PAYLOAD_TYPE_MASK) != RTP_PACKET_TYPE_VOICE) {
-        ErrorMessage("Invalid RTP packet type");
+        Log_Error("Invalid RTP packet type");
         return;
     }
     u16 sequence  = ReadU16BE(data + 2);
@@ -55,7 +55,7 @@ static READVOICEDATAPACKET_WITHENCRYPTIONMODE(ReadVoiceDataPacketHook) {
                                                            data, header_size,
                                                            nonce, secretKey) != 0) {
                 // NOTE(geni): Presumably we actually got xsalsa20_poly1305 somehow... or we messed up
-                ErrorMessage("Failed to decrypt voice data");
+                Log_Error("Failed to decrypt voice data");
                 return;
             }
             if (decrypted_len < extension_size) {
@@ -74,25 +74,25 @@ static READVOICEDATAPACKET_WITHENCRYPTIONMODE(ReadVoiceDataPacketHook) {
             if (is_silence || (passthrough && !is_dave_frame)) {
                 // NOTE(geni): Ripcord expects full first byte instead of just version
                 // NOTE(geni): Hardcode "version" to 80 so Ripcord doesn't apply its evil processing to it
-                voice_data_append(voiceAccum, payload, payload_len, 0x80, sequence, timestamp, ssrc);
+                VoiceDatasAccum_Append(voiceAccum, payload, payload_len, 0x80, sequence, timestamp, ssrc);
                 break;
             }
 
             u8                      dave_plain[4096];
             size_t                  written = 0;
             DAVEDecryptorResultCode result  = DAVE_DECRYPTOR_RESULT_CODE_DECRYPTION_FAILURE;
-            DAVEDecryptorHandle     dec     = DaveGetDecryptor(ssrc);
+            DAVEDecryptorHandle     dec     = Dave_GetDecryptor(ssrc);
             if (dec) {
                 result = daveDecryptorDecrypt(dec, DAVE_MEDIA_TYPE_AUDIO, payload, (size_t) payload_len,
                                               dave_plain, sizeof dave_plain, &written);
             }
             if (result == DAVE_DECRYPTOR_RESULT_CODE_SUCCESS) {
-                voice_data_append(voiceAccum, dave_plain, (u64) written, 0x80, sequence, timestamp, ssrc);
+                VoiceDatasAccum_Append(voiceAccum, dave_plain, (u64) written, 0x80, sequence, timestamp, ssrc);
             }
         } break;
         default: {
             // NOTE(geni): Just append it as-is for now, since that's what Ripcord originally did lol
-            voice_data_append(voiceAccum, data + RTP_HEADER_SIZE, size - RTP_HEADER_SIZE, data[0], sequence, timestamp, ssrc);
+            VoiceDatasAccum_Append(voiceAccum, data + RTP_HEADER_SIZE, size - RTP_HEADER_SIZE, data[0], sequence, timestamp, ssrc);
         } break;
     }
 }

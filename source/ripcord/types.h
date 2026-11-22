@@ -138,86 +138,59 @@ typedef struct
 } DisDbPrepared;
 static_assert(sizeof(DisDbPrepared) == 0x1F0);
 
-typedef struct {
-    QObject base;
-    void*   db;
-    void*   d;
-} DisClient;
-static_assert(offsetof(DisClient, db) == 0x10);
-static_assert(sizeof(DisClient) == 0x20);
+//~ Changes
 
-//~ Sidebar
-
-typedef struct {
-    RipStmt all_guild_ids;
-    RipStmt all_guild_text_channel_ids;
-    RipStmt all_guild_voice_channel_ids;
-    RipStmt all_guild_channel_category_ids;
-    RipStmt priv_chan_ids_for_user;
-    RipStmt users_in_voice_channel_q;
-    RipStmt private_chans_sort;
-    RipStmt guild_text_chans_sort_q;
-    RipStmt guild_voice_chans_sort_q;
-    RipStmt guild_chan_cats_sort_q;
-    RipStmt discord_guilds_as_user_sort;
-} RipSbarDisStmts;
-static_assert(sizeof(RipSbarDisStmts) == 0x58);
-
-typedef struct {
-    Pad(0x2D0);
-    FlakeId own_user_id;
-} RipSbarViewPriv;
-static_assert(offsetof(RipSbarViewPriv, own_user_id) == 0x2D0);
-
-typedef struct {
-    Pad(0x60);
-    RipSbarViewPriv* priv;
-} RipSbarView;
-static_assert(offsetof(RipSbarView, priv) == 0x60);
+typedef struct DisChange  DisChange;
+typedef struct DisChanges DisChanges;
 
 typedef u32 DisChangeType;
 enum {
-    DisChangeType_ChannelUpdated     = 1,
-    DisChangeType_GuildMemberAdded   = 10,
-    DisChangeType_GuildMemberUpdated = 11,
-    DisChangeType_GuildMemberRemoved = 12,
-    DisChangeType_GuildRoleCreated   = 15,
-    DisChangeType_GuildRoleUpdated   = 16,
-    DisChangeType_GuildRoleDeleted   = 17,
-    DisChangeType_OverflowFlag       = 24,
+    DisChangeType_ChannelUpdated = 1,
 };
 
 typedef struct {
-    union {
-        struct {
-            FlakeId guild_id;
-            FlakeId user_id;
-        } member;
-        u8 data[0x18];
-    };
-    DisChangeType type;
-    Pad(4);
-} DisChange;
-static_assert(sizeof(DisChange) == 0x20);
-static_assert(offsetof(DisChange, type) == 0x18);
+    DisChanges* dis_changes;
+    void*       d;
+} ChgsRef;
+static_assert(sizeof(ChgsRef) == 0x10);
+
+//~ Gateway
+
+typedef u32 GatewayEvent;
+enum {
+    GatewayEvent_Unknown           = 2,
+    GatewayEvent_GuildMemberUpdate = 9,
+    GatewayEvent_GuildRoleUpdate   = 14,
+    GatewayEvent_GuildRoleDelete   = 15,
+};
 
 typedef struct {
-    i32        a;
-    i32        s;
-    DisChange* ptr;
-    DisChange  storage[32];
-} QVarLengthArray_DisChange_32;
-static_assert(sizeof(QVarLengthArray_DisChange_32) == 0x410);
-
-typedef struct {
-    QVarLengthArray_DisChange_32 items;
-    u8                           extras[0x28];
-    u32                          flags;
-    Pad(4);
-} DisChanges;
-static_assert(offsetof(DisChanges, extras) == 0x410);
-static_assert(offsetof(DisChanges, flags) == 0x438);
-static_assert(sizeof(DisChanges) == 0x440);
+    Pad(0x10);
+    void*          session;
+    void*          db;
+    DisDbPrepared* common_stmts;
+    void*          web_socket;
+    void*          heartbeat_timer;
+    void*          reconnect_timer;
+    void*          status_update_batch_timer;
+    void*          typing_start_batch_timer;
+    u32            last_seq;
+    u32            state_type;
+    QString        auth_token;
+    QString        gateway_url;
+    QString        server_session_id;
+    QString        queued_guild_member_search_name;
+    FlakeId        queued_guild_member_search_guild;
+    void*          batched_status_changes;
+    void*          batched_status_roles;
+    void*          rock_guild_user_map;
+    void*          batched_typing_starts;
+    void*          recent_guild_member_name_search_hashes;
+    QByteArray     batched_status_string_data;
+    FlakeId        own_user_id;
+} DisSessionWorker;
+static_assert(offsetof(DisSessionWorker, common_stmts) == 0x20);
+static_assert(offsetof(DisSessionWorker, own_user_id) == 0xB0);
 
 //~ Voice
 
@@ -315,22 +288,6 @@ typedef struct {
     u32   silentPackets;
 } DisVoiceEncode_EncodingContext;
 static_assert(sizeof(DisVoiceEncode_EncodingContext) == 0x28);
-
-enum {
-    VOICE_OP_IDENTIFY             = 0,
-    VOICE_OP_READY                = 2,
-    VOICE_OP_SESSION_DESCRIPTION  = 4,
-    VOICE_OP_SPEAKING             = 5,
-    VOICE_OP_HEARTBEAT_ACK        = 6,
-    VOICE_OP_HELLO                = 8,
-    VOICE_OP_CLIENTS_CONNECT      = 11,
-    VOICE_OP_CLIENT_DISCONNECT    = 13,
-    VOICE_OP_PREPARE_TRANSITION   = 21,
-    VOICE_OP_EXECUTE_TRANSITION   = 22,
-    VOICE_OP_READY_FOR_TRANSITION = 23,
-    VOICE_OP_PREPARE_EPOCH        = 24,
-    RTP_PACKET_TYPE_VOICE         = 0x78,
-};
 
 enum {
     // NOTE(geni): 'h' (SMALL_TUPLE_EXT)

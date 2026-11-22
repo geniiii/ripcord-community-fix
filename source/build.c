@@ -55,19 +55,23 @@ typedef uintptr_t uptr;
 
 #define SUPPORTED_VERSION     "0.4.29"
 
-#define VERSION               "1.11.0"
+#define VERSION               "1.11.1"
 
 #define JSMN_STATIC
 #include "ext/jsmn.h"
 #include "string8.c"
-#include "util.c"
-#include "json_util.c"
+#include "log.c"
+#include "json.c"
 #include "update.c"
+#include "discord/protocol.h"
 #include "qt/types.h"
 #include "qt/functions.h"
-#include "qt/json.c"
 #include "ripcord/types.h"
 #include "ripcord/functions.h"
+#include "qt/json.c"
+#include "ripcord/db.c"
+#include "ripcord/erf.c"
+#include "op.c"
 #include "sodium.h"
 #include "dave/dave.h"
 #include "dave/state.c"

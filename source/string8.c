@@ -13,30 +13,30 @@ typedef struct {
     {(u8*) (s), sizeof(s) - 1}
 #define S8VArg(s) (i32)((s).size), ((s).cstr)
 
-static u32 S8Equals(String8 a, String8 b) {
+static u32 S8_Equals(String8 a, String8 b) {
     return a.size == b.size && memcmp(a.data, b.data, a.size) == 0;
 }
 
-static inline String8 S8SubstrOnIndex(String8 str, u64 index) {
+static inline String8 S8_SubstrOnIndex(String8 str, u64 index) {
     return (String8) {
         .s    = str.s + index,
         .size = str.size - index,
     };
 }
 
-static u32 S8StartsWith(String8 s, String8 prefix) {
+static u32 S8_StartsWith(String8 s, String8 prefix) {
     return s.size >= prefix.size && memcmp(s.data, prefix.data, prefix.size) == 0;
 }
 
-static u32 S8ConsumePrefix(String8* s, String8 prefix) {
-    if (!S8StartsWith(*s, prefix)) {
+static u32 S8_ConsumePrefix(String8* s, String8 prefix) {
+    if (!S8_StartsWith(*s, prefix)) {
         return 0;
     }
-    *s = S8SubstrOnIndex(*s, prefix.size);
+    *s = S8_SubstrOnIndex(*s, prefix.size);
     return 1;
 }
 
-static String8 S8UntilNewline(String8 s) {
+static String8 S8_UntilNewline(String8 s) {
     u64 i = 0;
     while (i < s.size && s.s[i] != '\r' && s.s[i] != '\n') {
         ++i;
@@ -47,7 +47,7 @@ static String8 S8UntilNewline(String8 s) {
     };
 }
 
-static u32 S8ConsumeU8(String8* s, u8* out) {
+static u32 S8_ConsumeU8(String8* s, u8* out) {
     u64 i     = 0;
     u32 value = 0;
     while (i < s->size && s->s[i] >= '0' && s->s[i] <= '9') {
@@ -58,11 +58,11 @@ static u32 S8ConsumeU8(String8* s, u8* out) {
         ++i;
     }
     *out = (u8) value;
-    *s   = S8SubstrOnIndex(*s, i);
+    *s   = S8_SubstrOnIndex(*s, i);
     return i > 0;
 }
 
-static u32 S8ParseU64(String8 s, u64* out) {
+static u32 S8_ParseU64(String8 s, u64* out) {
     if (s.size == 0) {
         return 0;
     }
@@ -80,9 +80,9 @@ static u32 S8ParseU64(String8 s, u64* out) {
     return 1;
 }
 
-static u32 S8ParseU32(String8 s, u32* out) {
+static u32 S8_ParseU32(String8 s, u32* out) {
     u64 value;
-    if (!S8ParseU64(s, &value)) {
+    if (!S8_ParseU64(s, &value)) {
         return 0;
     }
 
@@ -90,11 +90,11 @@ static u32 S8ParseU32(String8 s, u32* out) {
     return 1;
 }
 
-static u32 S8ParseI32(String8 s, i32* out) {
-    u32 negative = S8ConsumePrefix(&s, S8Lit("-"));
+static u32 S8_ParseI32(String8 s, i32* out) {
+    u32 negative = S8_ConsumePrefix(&s, S8Lit("-"));
 
     u64 value;
-    if (!S8ParseU64(s, &value)) {
+    if (!S8_ParseU64(s, &value)) {
         return 0;
     }
     if (negative) {
@@ -106,7 +106,7 @@ static u32 S8ParseI32(String8 s, i32* out) {
 }
 
 // NOTE(geni): Stolen from https://lemire.me/blog/2021/11/18/converting-integers-to-fix-digit-representations-quickly/
-static u64 EncodeTenThousands(u64 hi, u64 lo) {
+static u64 S8_EncodeTenThousands(u64 hi, u64 lo) {
     u64 merged   = hi | (lo << 32);
     u64 top      = ((merged * 10486ULL) >> 20) & ((0x7FULL << 32) | 0x7FULL);
     u64 bot      = merged - 100ULL * top;
@@ -117,15 +117,15 @@ static u64 EncodeTenThousands(u64 hi, u64 lo) {
     return tens;
 }
 
-static String8 S8FromU64(u64 value, char* buf, u32 bufsize) {
+static String8 S8_FromU64(u64 value, char* buf, u32 bufsize) {
     Unreferenced(bufsize);
     u64 hi  = value / 10000000000000000ULL;
     u64 mid = (value / 100000000ULL) % 100000000ULL;
     u64 lo  = value % 100000000ULL;
 
-    u64 a = 0x3030303030303030ULL + EncodeTenThousands(hi / 10000, hi % 10000);
-    u64 b = 0x3030303030303030ULL + EncodeTenThousands(mid / 10000, mid % 10000);
-    u64 c = 0x3030303030303030ULL + EncodeTenThousands(lo / 10000, lo % 10000);
+    u64 a = 0x3030303030303030ULL + S8_EncodeTenThousands(hi / 10000, hi % 10000);
+    u64 b = 0x3030303030303030ULL + S8_EncodeTenThousands(mid / 10000, mid % 10000);
+    u64 c = 0x3030303030303030ULL + S8_EncodeTenThousands(lo / 10000, lo % 10000);
 
     memcpy(buf, &a, 8);
     memcpy(buf + 8, &b, 8);

@@ -1,22 +1,22 @@
-static void DaveRejectTransition(i32 transition_id) {
-    DaveSendTransitionOp(DAVE_MLS_INVALID_COMMIT, transition_id);
-    DaveInit(daveSessionGetProtocolVersion(g_dave.session));
+static void Dave_RejectTransition(i32 transition_id) {
+    Dave_SendTransitionOp(DAVE_MLS_INVALID_COMMIT, transition_id);
+    Dave_Init(daveSessionGetProtocolVersion(g_dave.session));
 }
 
-static void HandleDaveProposals(u8* data, size_t len) {
+static void Dave_HandleProposals(u8* data, size_t len) {
     DaveRecognizedUsers recognized;
-    DaveBuildRecognizedUsers(&recognized);
+    Dave_BuildRecognizedUsers(&recognized);
 
     u8*    resp      = NULL;
     size_t resp_size = 0;
     daveSessionProcessProposals(g_dave.session, data, len, recognized.ptrs, recognized.count, &resp, &resp_size);
     if (resp && resp_size > 0) {
-        DaveSendBinary(DAVE_MLS_COMMIT_WELCOME, resp, resp_size);
+        Dave_SendBinary(DAVE_MLS_COMMIT_WELCOME, resp, resp_size);
         daveFree(resp);
     }
 }
 
-static void HandleDaveAnnounceCommit(u8* data, size_t len) {
+static void Dave_HandleAnnounceCommit(u8* data, size_t len) {
     if (len < 2) {
         return;
     }
@@ -26,23 +26,23 @@ static void HandleDaveAnnounceCommit(u8* data, size_t len) {
 
     DAVECommitResultHandle result = daveSessionProcessCommit(g_dave.session, commit_data, commit_len);
     if (!result) {
-        DebugMsg("ProcessCommit ignored");
+        Log_Debug("ProcessCommit ignored");
         return;
     }
 
     if (daveCommitResultIsFailed(result)) {
-        DebugMsg("ProcessCommit failed");
-        DaveRejectTransition(transition_id);
+        Log_Debug("ProcessCommit failed");
+        Dave_RejectTransition(transition_id);
     } else if (daveCommitResultIsIgnored(result)) {
-        DebugMsg("ProcessCommit ignored");
+        Log_Debug("ProcessCommit ignored");
     } else {
-        DebugMsg("ProcessCommit succeeded: transition_id=%d", transition_id);
-        DavePrepareTransition((u16) transition_id, daveSessionGetProtocolVersion(g_dave.session));
+        Log_Debug("ProcessCommit succeeded: transition_id=%d", transition_id);
+        Dave_PrepareTransition((u16) transition_id, daveSessionGetProtocolVersion(g_dave.session));
     }
     daveCommitResultDestroy(result);
 }
 
-static void HandleDaveWelcome(u8* data, size_t len) {
+static void Dave_HandleWelcome(u8* data, size_t len) {
     if (len < 2) {
         return;
     }
@@ -51,26 +51,26 @@ static void HandleDaveWelcome(u8* data, size_t len) {
     size_t welcome_len   = len - 2;
 
     DaveRecognizedUsers recognized;
-    DaveBuildRecognizedUsers(&recognized);
+    Dave_BuildRecognizedUsers(&recognized);
 
     DAVEWelcomeResultHandle result = daveSessionProcessWelcome(g_dave.session, welcome_data, welcome_len,
                                                                recognized.ptrs, recognized.count);
     if (!result) {
-        DebugMsg("ProcessWelcome failed");
-        DaveRejectTransition(transition_id);
+        Log_Debug("ProcessWelcome failed");
+        Dave_RejectTransition(transition_id);
         return;
     }
 
-    DebugMsg("ProcessWelcome succeeded: transition_id=%d", transition_id);
-    DavePrepareTransition((u16) transition_id, daveSessionGetProtocolVersion(g_dave.session));
+    Log_Debug("ProcessWelcome succeeded: transition_id=%d", transition_id);
+    Dave_PrepareTransition((u16) transition_id, daveSessionGetProtocolVersion(g_dave.session));
     daveWelcomeResultDestroy(result);
 }
 
-static void HandleDaveBinaryMsg(QByteArray* data) {
-    u8* raw = (u8*) QByteArrayConstData(data);
-    i32 len = QByteArraySize(data);
+static void Dave_HandleBinaryMessage(QByteArray* data) {
+    u8* raw = (u8*) QByteArray_ConstData(data);
+    i32 len = QByteArray_Size(data);
     if (len < (i32) sizeof(DaveBinaryHeader)) {
-        DebugMsg("DaveBinaryMsg too short: %d bytes", len);
+        Log_Debug("DaveBinaryMsg too short: %d bytes", len);
         return;
     }
 
@@ -86,24 +86,24 @@ static void HandleDaveBinaryMsg(QByteArray* data) {
         } break;
 
         case DAVE_MLS_PROPOSALS: {
-            HandleDaveProposals(payload, payload_size);
+            Dave_HandleProposals(payload, payload_size);
         } break;
 
         case DAVE_MLS_ANNOUNCE_COMMIT: {
-            HandleDaveAnnounceCommit(payload, payload_size);
+            Dave_HandleAnnounceCommit(payload, payload_size);
         } break;
 
         case DAVE_MLS_WELCOME: {
-            HandleDaveWelcome(payload, payload_size);
+            Dave_HandleWelcome(payload, payload_size);
         } break;
 
         default: {
-            DebugMsg("Unhandled binary opcode %d", hdr->opcode);
+            Log_Debug("Unhandled binary opcode %d", hdr->opcode);
         } break;
     }
 }
 
-static void DaveBinarySlotImpl(i32 which, void* this, void* receiver, void** args, u8* ret) {
+static void Dave_BinarySlotImpl(i32 which, void* this, void* receiver, void** args, u8* ret) {
     Unreferenced(receiver);
     switch (which) {
         case 0: {  // NOTE(geni): Destroy
@@ -111,7 +111,7 @@ static void DaveBinarySlotImpl(i32 which, void* this, void* receiver, void** arg
         } break;
 
         case 1: {  // NOTE(geni): Call
-            HandleDaveBinaryMsg((QByteArray*) args[1]);
+            Dave_HandleBinaryMessage((QByteArray*) args[1]);
         } break;
 
         case 2: {  // NOTE(geni): Compare

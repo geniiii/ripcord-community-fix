@@ -24,7 +24,7 @@ static u8 RemoveLegacyDlls(void) {
             _snwprintf(msg, ArrayCount(msg), L"Renamed %s from an older version of the Ripcord Community Fix to %s.old. Restart Ripcord to use the new version.", legacy_dlls[i], legacy_dlls[i]);
             MessageBoxW(NULL, msg, L"Ripcord Community Fix", MB_ICONINFORMATION);
         } else {
-            ErrorMessage("Failed to rename %ls. Please delete it manually.", legacy_dlls[i]);
+            Log_Error("Failed to rename %ls. Please delete or rename it manually.", legacy_dlls[i]);
         }
     }
     return found;
@@ -59,10 +59,10 @@ __declspec(dllexport) void* qt_plugin_instance(void) {
         return 0;
     }
 
-    if (LoadHooks()) {
-        StartUpdateCheck();
+    if (Hook_Init()) {
+        Update_StartCheck();
     } else {
-        ErrorMessage("Failed to load hooks.");
+        Log_Error("Failed to load hooks.");
     }
     return 0;
 }

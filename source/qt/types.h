@@ -2,12 +2,6 @@
 typedef struct QJsonPrivate_Data  QJsonPrivate_Data;
 typedef struct QJsonPrivate_Array QJsonPrivate_Array;
 
-typedef struct {
-    void* vtable;
-    void* d_ptr;
-} QObject;
-static_assert(sizeof(QObject) == 0x10);
-
 typedef struct
 {
     QJsonPrivate_Data*  d;
@@ -68,7 +62,7 @@ typedef struct {
 } QString;
 static_assert(sizeof(QString) == 0x8);
 
-void* QTypedArrayDataData(QTypedArrayData* array) {
+void* QTypedArrayData_Data(QTypedArrayData* array) {
     return (void*) ((uptr) array + array->offset);
 }
 
@@ -92,11 +86,11 @@ typedef struct {
 } QByteArray;
 static_assert(sizeof(QByteArray) == 0x8);
 
-static const char* QByteArrayConstData(const QByteArray* ba) {
-    return (const char*) QTypedArrayDataData(ba->d);
+static const char* QByteArray_ConstData(const QByteArray* ba) {
+    return (const char*) QTypedArrayData_Data(ba->d);
 }
 
-static i32 QByteArraySize(const QByteArray* ba) {
+static i32 QByteArray_Size(const QByteArray* ba) {
     return ba->d->size;
 }
 

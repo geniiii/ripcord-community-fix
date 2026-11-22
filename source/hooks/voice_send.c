@@ -1,22 +1,22 @@
-static DISVOICEENCODE_CREATEENCODINGCONTEXT(DisVoiceEncodeCreateEncodingContextHook) {
-    DisVoiceEncode_EncodingContext* context = disvoiceencode_createencodingcontext(this, forceMusicSignal);
+static DISVOICEENCODE_CREATEENCODINGCONTEXT(DisVoiceEncode_CreateEncodingContextHook) {
+    DisVoiceEncode_EncodingContext* context = DisVoiceEncode_CreateEncodingContext(this, forceMusicSignal);
     RtlGenRandom(&context->timestamp, sizeof context->timestamp);
     return context;
 }
 
-static SETVOICEENCSTRINGS(SetVoiceEncStringsHook) {
+static DISCLIENTIMPL_VOICEENCSTRINGS(DisClientImpl_VoiceEncStringsHook) {
     // NOTE(geni): Lie about our encryption support to get Ripcord to connect
 
     // NOTE(geni): From now on, the xsalsa20_poly1305 path is xchacha20_poly1305_rtpsize
-    VoiceEncStrings* arr = set_voice_enc_strings(this);
-    qstring_set_from_qlatin1string(&arr->xsalsa20_poly1305, QLatin1StringLit("aead_xchacha20_poly1305_rtpsize"));
+    VoiceEncStrings* arr = DisClientImpl_VoiceEncStrings(this);
+    QString_SetFromQLatin1String(&arr->xsalsa20_poly1305, QLatin1StringLit("aead_xchacha20_poly1305_rtpsize"));
 
     // NOTE(geni): I originally added support for this mode but realized it just adds unnecessary complexity
-    qstring_set_from_qlatin1string(&arr->xsalsa20_poly1305_suffix, QLatin1StringLit("nope"));
+    QString_SetFromQLatin1String(&arr->xsalsa20_poly1305_suffix, QLatin1StringLit("nope"));
     return arr;
 }
 
-void SendVoiceData(u32* noncePtr, void* udpSocket, u8* buffer, u32 encMode, u8* secretKey, QString* hostName, u16 port, u32 ssrc, u16* seq, u8* data, u64 dataSize) {
+void Voice_SendData(u32* noncePtr, void* udpSocket, u8* buffer, u32 encMode, u8* secretKey, QString* hostName, u16 port, u32 ssrc, u16* seq, u8* data, u64 dataSize) {
     if (!secretKey || !hostName->d->size) {
         return;
     }
@@ -57,7 +57,7 @@ void SendVoiceData(u32* noncePtr, void* udpSocket, u8* buffer, u32 encMode, u8* 
         DAVEEncryptorResultCode result  = daveEncryptorEncrypt(g_dave.encryptor, DAVE_MEDIA_TYPE_AUDIO, ssrc,
                                                                data, (size_t) dataSize, dave_buf, sizeof dave_buf, &written);
         if (result != DAVE_ENCRYPTOR_RESULT_CODE_SUCCESS) {
-            DebugMsg("DAVE encrypt failed: result=%d", result);
+            Log_Debug("DAVE encrypt failed: result=%d", result);
             return;
         }
         encrypt_payload = dave_buf;
@@ -82,7 +82,7 @@ void SendVoiceData(u32* noncePtr, void* udpSocket, u8* buffer, u32 encMode, u8* 
                 NULL,
                 nonce, secretKey);
             if (result) {
-                ErrorMessage("Failed to encrypt voice data: result=%d", result);
+                Log_Error("Failed to encrypt voice data: result=%d", result);
                 return;
             }
 
@@ -90,34 +90,33 @@ void SendVoiceData(u32* noncePtr, void* udpSocket, u8* buffer, u32 encMode, u8* 
             memcpy(buffer + 12 + encrypted_len, nonce, 4);
         } break;
         default: {
-            ErrorMessage("Unsupported encryption mode");
+            Log_Error("Unsupported encryption mode");
             return;
         } break;
     }
 
     QHostAddress addr;
-    qhostaddress_constructor_from_qstring(&addr, hostName);
-    write_datagram(udpSocket, buffer, packet_size, &addr, port);
-    qhostaddress_destructor(&addr);
+    QHostAddress_ConstructorQString(&addr, hostName);
+    QUdpSocket_WriteDatagram(udpSocket, buffer, packet_size, &addr, port);
+    QHostAddress_Destructor(&addr);
 }
 
-static void EmptyVoicePacketSendHook(DisVLWorker** vlWorkerPtr) {
+static void DisVLWorker_SendEmptyVoicePacketsHook(DisVLWorker** vlWorkerPtr) {
     DisVLWorker* vlWorker = *vlWorkerPtr;
 
-    // NOTE(geni): Send video op
     if (!vlWorker->emptyVoicePacketsSent) {
         QJsonObject d;
-        qjsonobject_constructor(&d);
-        QJsonInsertInt(&d, S8Lit("audio_ssrc"), vlWorker->ssrc);
-        QJsonInsertInt(&d, S8Lit("video_ssrc"), 0);
-        QJsonInsertInt(&d, S8Lit("rtx_ssrc"), 0);
-        SendVoiceOp(vlWorker->webSocket, 12, &d);
+        QJsonObject_Constructor(&d);
+        QJson_InsertInt(&d, S8Lit("audio_ssrc"), vlWorker->ssrc);
+        QJson_InsertInt(&d, S8Lit("video_ssrc"), 0);
+        QJson_InsertInt(&d, S8Lit("rtx_ssrc"), 0);
+        Op_SendVoice(vlWorker->webSocket, VOICE_OP_VIDEO, &d);
     }
     ++vlWorker->emptyVoicePacketsSent;
 
     u8 silence_packet[3] = {0xF8, 0xFF, 0xFE};
 
-    SendVoiceData(
+    Voice_SendData(
         &vlWorker->COMMUNITY_FIX_nonce,
         vlWorker->udpSocket,
         vlWorker->sendPacketBuffer,
@@ -128,17 +127,17 @@ static void EmptyVoicePacketSendHook(DisVLWorker** vlWorkerPtr) {
         silence_packet, 3);
 
     if (vlWorker->emptyVoicePacketsSent >= 6) {
-        qtimer_stop(vlWorker->emptyVoicePacketsTimer);
+        QTimer_Stop(vlWorker->emptyVoicePacketsTimer);
     }
 }
-static SEND_VOICE_DATAGRAM(SendVoiceDatagramHook) {
+static DISVOICELINE_SENDVOICEDATAGRAM(DisVoiceLine_SendVoiceDatagramHook) {
     Unreferenced(timestamp);
     DisVLWorker* vlWorker = this->priv->vlWorker;
     if (!vlWorker || !vlWorker->serverAddress.d->size || !vlWorker->secretKey) {
         return;
     }
 
-    SendVoiceData(
+    Voice_SendData(
         &vlWorker->COMMUNITY_FIX_nonce,
         vlWorker->udpSocket,
         vlWorker->sendPacketBuffer,
@@ -152,8 +151,8 @@ static SEND_VOICE_DATAGRAM(SendVoiceDatagramHook) {
         dataSize);
 }
 
-static DISVLWORKER_CONSTRUCTOR(DisVLWorkerConstructorHook) {
-    disvlworker_constructor(this, parent);
+static DISVLWORKER_CONSTRUCTOR(DisVLWorker_ConstructorHook) {
+    DisVLWorker_Constructor(this, parent);
     // NOTE(geni): This takes the space of stolen padding, hence it's usually going to be uninitialized.
     //             The nonce is an incrementing integer, so we have to initialize it
     this->COMMUNITY_FIX_nonce = 0;
@@ -162,13 +161,13 @@ static DISVLWORKER_CONSTRUCTOR(DisVLWorkerConstructorHook) {
     this->sendPacketBufferSize = 2048;
 
     // NOTE(geni): Hellspawn
-    if (g_binary_msg_signal_fn && qobject_connectimpl) {
+    if (g_binary_msg_signal_fn && QObject_ConnectImpl) {
         DaveBinarySlotObject* slot = (DaveBinarySlotObject*) malloc(sizeof(DaveBinarySlotObject));
         slot->m_ref                = 1;
-        slot->m_impl               = (void*) DaveBinarySlotImpl;
+        slot->m_impl               = (void*) Dave_BinarySlotImpl;
 
         u8 conn_retval[8];
-        qobject_connectimpl(
+        QObject_ConnectImpl(
             conn_retval,
             this->webSocket,
             &g_binary_msg_signal_fn,

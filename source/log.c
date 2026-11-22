@@ -1,4 +1,4 @@
-static void ErrorMessage(const char* fmt, ...) {
+static void Log_Error(const char* fmt, ...) {
     char    buf[2048];
     va_list args;
     va_start(args, fmt);
@@ -7,7 +7,7 @@ static void ErrorMessage(const char* fmt, ...) {
     MessageBoxA(0, buf, "Ripcord Community Fix Failure", MB_ICONERROR);
 }
 
-static void DebugMsg(const char* fmt, ...) {
+static void Log_Debug(const char* fmt, ...) {
     SYSTEMTIME t;
     GetLocalTime(&t);
 

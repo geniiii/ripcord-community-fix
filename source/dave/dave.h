@@ -1,17 +1,6 @@
 #include "ext/libdave/cpp/includes/dave/dave.h"
 
-#define DAVE_MAX_USERS   256
-#define DAVE_MAGIC_BYTES 0xFAFA
-
-enum {
-    DAVE_MLS_EXTERNAL_SENDER = 25,
-    DAVE_MLS_KEY_PACKAGE     = 26,
-    DAVE_MLS_PROPOSALS       = 27,
-    DAVE_MLS_COMMIT_WELCOME  = 28,
-    DAVE_MLS_ANNOUNCE_COMMIT = 29,
-    DAVE_MLS_WELCOME         = 30,
-    DAVE_MLS_INVALID_COMMIT  = 31,
-};
+#define DAVE_MAX_USERS 256
 
 typedef struct {
     u32                 ssrc;
