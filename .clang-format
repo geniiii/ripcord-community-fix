@@ -1,25 +1,25 @@
-Language: Cpp
+Language: C
 BasedOnStyle: Chromium
 IndentWidth: 4
-UseTab: Never
-BinPackParameters: true
-AllowAllParametersOfDeclarationOnNextLine: true
-AllowShortBlocksOnASingleLine: Always
-CommentPragmas: '.\/[\*(\/\/)]+(.+\n.+)+\*\/'
 ColumnLimit: 0
+InsertBraces: true
+InsertNewlineAtEOF: true
 AlignConsecutiveDeclarations: true
-AlignConsecutiveAssignments: true
+AlignConsecutiveAssignments:
+  Enabled: true
+  AcrossComments: true
 AlignConsecutiveMacros: AcrossEmptyLines
 AlignEscapedNewlines: Right
 AlignArrayOfStructures: Right
 AlignConsecutiveBitFields: Consecutive
 AlignTrailingComments: true
-AlignAfterOpenBracket: true
+AlignAfterOpenBracket: Align
+AlignOperands: Align
+AllowShortBlocksOnASingleLine: Always
 AllowShortFunctionsOnASingleLine: All
-AllowShortCaseLabelsOnASingleLine: true
-AllowShortIfStatementsOnASingleLine: true
-AllowShortLoopsOnASingleLine: true
-AlignOperands: true
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
 SpaceAfterCStyleCast: true
+Cpp11BracedListStyle: false
 SortIncludes: Never
-IncludeBlocks: Preserve

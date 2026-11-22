@@ -1,7 +1,7 @@
 #include "qt/plugin_metadata.h"
 
 static u8 RemoveLegacyDlls(void) {
-    static const wchar_t* legacy_dlls[] = {L"winmm.dll", L"uxtheme.dll"};
+    static const wchar_t* legacy_dlls[] = { L"winmm.dll", L"uxtheme.dll" };
 
     wchar_t dir[MAX_PATH];
     GetModuleFileNameW(NULL, dir, MAX_PATH);

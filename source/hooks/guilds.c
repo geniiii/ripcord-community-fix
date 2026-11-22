@@ -44,7 +44,7 @@ static ERFMAP_FIND(ErfMap_FindHook) {
         ErfMap_Find(map, "guild_folders", 13, &new_out) &&
         new_out.tag == ErfTag_Arr) {
         ErfArr arr          = new_out.arr;
-        ErfMap guild_folder = {0};
+        ErfMap guild_folder = { 0 };
         g_guild_count       = 0;
         for (i32 i = 0; i < arr.count; ++i) {
             ErfArr_At(&arr, &new_out, i);

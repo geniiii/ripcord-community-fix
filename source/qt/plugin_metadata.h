@@ -27,7 +27,7 @@ enum {
         char latin1[((sizeof(s) + 4) & ~3) - 2]; \
     }
 #define QJsonPrivateLatin1String(s) \
-    {.length = sizeof(s) - 1, .latin1 = s}
+    { .length = sizeof(s) - 1, .latin1 = s }
 
 #define PluginMetaDataOffset(object, field) (offsetof(PluginMetaData, object.field) - offsetof(PluginMetaData, object))
 

@@ -67,7 +67,7 @@ void Voice_SendData(u32* noncePtr, void* udpSocket, u8* buffer, u32 encMode, u8*
     u64 packet_size;
     switch (encMode) {
         case VoiceEncMode_XChaCha20_Poly1305_RtpSize: {
-            u8  nonce[24]   = {0};
+            u8  nonce[24]   = { 0 };
             u32 nonce_value = (*noncePtr)++;
             nonce[0]        = (u8) (nonce_value >> 24);
             nonce[1]        = (u8) (nonce_value >> 16);
@@ -114,7 +114,7 @@ static void DisVLWorker_SendEmptyVoicePacketsHook(DisVLWorker** vlWorkerPtr) {
     }
     ++vlWorker->emptyVoicePacketsSent;
 
-    u8 silence_packet[3] = {0xF8, 0xFF, 0xFE};
+    u8 silence_packet[3] = { 0xF8, 0xFF, 0xFE };
 
     Voice_SendData(
         &vlWorker->COMMUNITY_FIX_nonce,
@@ -155,7 +155,7 @@ static DISVLWORKER_CONSTRUCTOR(DisVLWorker_ConstructorHook) {
     DisVLWorker_Constructor(this, parent);
     // NOTE(geni): This takes the space of stolen padding, hence it's usually going to be uninitialized.
     //             The nonce is an incrementing integer, so we have to initialize it
-    this->COMMUNITY_FIX_nonce = 0;
+    this->COMMUNITY_FIX_nonce  = 0;
     // NOTE(geni): Our implementation doesn't call realloc
     this->sendPacketBuffer     = malloc(2048);
     this->sendPacketBufferSize = 2048;

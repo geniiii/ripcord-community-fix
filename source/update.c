@@ -12,7 +12,7 @@ typedef struct {
 } Version;
 
 static u8 Update_ParseVersion(String8 str, Version* out) {
-    *out = (Version) {0};
+    *out = (Version) { 0 };
     if (!S8_ConsumeU8(&str, &out->major) || !S8_ConsumePrefix(&str, S8Lit(".")) ||
         !S8_ConsumeU8(&str, &out->minor) || !S8_ConsumePrefix(&str, S8Lit(".")) ||
         !S8_ConsumeU8(&str, &out->patch)) {
@@ -38,7 +38,7 @@ static u8 Update_IsOutdated(Version current, Version latest) {
 }
 
 static String8 Update_FetchLatestVersion(u8* buf, u32 buf_size) {
-    String8   result  = {0};
+    String8   result  = { 0 };
     HINTERNET session = WinHttpOpen(L"ripcord-community-fix-" VERSION, WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY, WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0);
     HINTERNET connect = NULL;
     HINTERNET request = NULL;

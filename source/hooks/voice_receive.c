@@ -21,7 +21,7 @@ static DISCLIENTIMPL_READVOICEDATAPACKET(DisClientImpl_ReadVoiceDataPacketHook) 
 
     switch (modeSpec) {
         case VoiceEncMode_XChaCha20_Poly1305_RtpSize: {
-            u64 csrc_count = data[0] & RTP_CSRC_COUNT_MASK;
+            u64 csrc_count     = data[0] & RTP_CSRC_COUNT_MASK;
             // NOTE(geni): Add CSRCs (4 bytes each) + RTP header extension
             u64 header_size    = RTP_HEADER_SIZE + csrc_count * RTP_CSRC_SIZE;
             u64 extension_size = 0;
@@ -48,7 +48,7 @@ static DISCLIENTIMPL_READVOICEDATAPACKET(DisClientImpl_ReadVoiceDataPacketHook) 
             }
 
             // NOTE(geni): Nonce is last 4 bytes
-            u8 nonce[24] = {0};
+            u8 nonce[24] = { 0 };
             memcpy(nonce, ciphertext + ciphertext_len, RTP_NONCE_SIZE);
             if (crypto_aead_xchacha20poly1305_ietf_decrypt(decrypted, &decrypted_len, NULL,
                                                            ciphertext, ciphertext_len,
@@ -66,7 +66,7 @@ static DISCLIENTIMPL_READVOICEDATAPACKET(DisClientImpl_ReadVoiceDataPacketHook) 
             u64 payload_len = decrypted_len - extension_size;
 
             // NOTE(geni): Silence frames are not DAVE-encrypted
-            u8 is_silence = payload_len == 3 && payload[0] == 0xF8 && payload[1] == 0xFF && payload[2] == 0xFE;
+            u8 is_silence    = payload_len == 3 && payload[0] == 0xF8 && payload[1] == 0xFF && payload[2] == 0xFE;
             // NOTE(geni): Try to avoid passing DAVE frames to Opus.
             //			   I don't know if this can ever really happen, but it would blow up users' ears
             u8 is_dave_frame = payload_len >= 2 && ReadU16BE(payload + payload_len - 2) == DAVE_MAGIC_BYTES;

@@ -23,7 +23,7 @@ static QABSTRACTSOCKET_CONNECTTOHOST(QAbstractSocket_ConnectToHostHook) {
 
 static QUDPSOCKET_READDATAGRAM(QUdpSocket_ReadDatagramHook) {
     if (size == sizeof(DiscordIpDiscoveryPacket)) {
-        i64 result = QUdpSocket_ReadDatagram(this, data, size, address, port);
+        i64 result                       = QUdpSocket_ReadDatagram(this, data, size, address, port);
         // NOTE(geni): Swap port endianness
         //             I wanted to just put a rol instruction after the movzx that reads it, but there was no space
         DiscordIpDiscoveryPacket* packet = (DiscordIpDiscoveryPacket*) data;

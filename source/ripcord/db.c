@@ -1,5 +1,5 @@
 #define U64Args(...) \
-    ArrayCount(((u64[]) {__VA_ARGS__})), (u64[]) { __VA_ARGS__ }
+    ArrayCount(((u64[]) { __VA_ARGS__ })), (u64[]) { __VA_ARGS__ }
 #define Db_BindU64(stmt, ...)       Db_BindU64N(stmt, U64Args(__VA_ARGS__))
 #define Db_RunU64(stmt, ...)        Db_RunU64N(stmt, U64Args(__VA_ARGS__))
 #define Db_ExecU64(stmts, sql, ...) Db_ExecU64N(stmts, sql, U64Args(__VA_ARGS__))
