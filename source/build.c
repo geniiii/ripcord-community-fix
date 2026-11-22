@@ -58,7 +58,7 @@ typedef uintptr_t uptr;
 
 #define SUPPORTED_VERSION     "0.4.29"
 
-#define VERSION               "1.11.1"
+#define VERSION               "1.11.2"
 
 #define JSMN_STATIC
 #include "ext/jsmn.h"
@@ -84,7 +84,7 @@ typedef uintptr_t uptr;
 #include "dave/mls.c"
 #include "hooks/network.c"
 #include "hooks/guilds.c"
-#include "hooks/sidebar.c"
+// #include "hooks/sidebar.c"
 #include "hooks/voice_gateway.c"
 #include "hooks/voice_send.c"
 #include "hooks/voice_receive.c"
