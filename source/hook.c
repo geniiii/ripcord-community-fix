@@ -76,6 +76,21 @@ static u32 Hook_Init() {
     // NOTE(geni): Disable gateway port splitting
     Hook_PatchByte(rip_base, 0xD677E, 0x10);
 
+    // NOTE(geni): Don't require a discriminator when editing mentions
+    Hook_PatchByte(rip_base, 0xEADD7, 0x90);
+    Hook_PatchByte(rip_base, 0xEADD8, 0x90);
+    // NOTE(geni): Don't append '#' to unresolved mentions, otherwise "@everyone" gets sent as "@everyone#"
+    Hook_PatchByte(rip_base, 0xEA595, 0xEB);
+    Hook_PatchByte(rip_base, 0xEA596, 0x0B);
+
+    // NOTE(geni): Evil hack to autocomplete mentions as just the username by commenting out discrim in the query
+    Hook_PatchString(rip_base, 0x3DF915, S8Lit("(user.name)--"));
+    Hook_PatchString(rip_base, 0x3DFA48, S8Lit("(user.name)--"));
+    Hook_PatchString(rip_base, 0x3DFB61, S8Lit("(user.name)--"));
+    Hook_PatchString(rip_base, 0x3DFC65, S8Lit("(user.name)--"));
+    Hook_PatchString(rip_base, 0x3DFDE8, S8Lit("(user.name)--"));
+    Hook_PatchString(rip_base, 0x3DFF41, S8Lit("(user.name)--"));
+
     HMODULE qt5core       = GetModuleHandleA("Qt5Core.dll");
     HMODULE qt5network    = GetModuleHandleA("Qt5Network.dll");
     HMODULE sodium        = GetModuleHandleA("libsodium.dll");
@@ -87,6 +102,13 @@ static u32 Hook_Init() {
 #include "qt/functions.inc"
 #undef QT_FN
 #undef QT_HOOK
+
+    // NOTE(geni): Match mentions without discrim
+    QString mention_re = {
+        .d = QString_FromAsciiHelper("\\@([\\w.]{1,32})", -1),
+    };
+    QRegularExpression_SetPattern(rip_base + 0x6604D8, &mention_re);
+    QString_Destructor(&mention_re);
 
     Client_Init();
 

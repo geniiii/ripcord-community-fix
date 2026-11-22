@@ -19,52 +19,39 @@ static DISDB_UPDATEUSERGUILDPOSITIONS(DisDb_UpdateUserGuildPositionsHook) {
     DisDbPrepared_EndTx(comStmts);
 }
 
-static ERFMAP_FIND(ErfMap_FindHook) {
-    u8      result = ErfMap_Find(map, key, key_size, out);
-    String8 key_s8 = {
-        .s    = (u8*) key,
-        .size = key_size,
-    };
-
-    if (!result) {
-        return result;
+static void Guilds_PatchChannelType(ErfMapAny* type) {
+    if (type->tag == ErfTag_Int32 && type->int32 == DisChannelType_GuildVoiceStage) {
+        type->int32 = DisChannelType_GuildVoice;
     }
+}
 
-    if (S8_Equals(key_s8, S8Lit("type")) &&
-        out->tag == ErfTag_Int32 && out->int32 == DisChannelType_GuildVoiceStage) {
-        out->int32 = DisChannelType_GuildVoice;
-        return result;
-    }
-
+static void Guilds_LoadFolderOrder(ErfMap* user_settings_map) {
     ErfMapAny new_out = {
         .tag = ErfTag_Nil,
     };
-    // NOTE(geni): We can probably just check return address instead and it would probably be faster
-    if (map && S8_Equals(key_s8, S8Lit("guild_positions")) &&
-        ErfMap_Find(map, "guild_folders", 13, &new_out) &&
-        new_out.tag == ErfTag_Arr) {
-        ErfArr arr          = new_out.arr;
-        ErfMap guild_folder = { 0 };
-        g_guild_count       = 0;
-        for (i32 i = 0; i < arr.count; ++i) {
-            ErfArr_At(&arr, &new_out, i);
-            if (new_out.tag != ErfTag_Map) {
-                continue;
-            }
-            guild_folder = new_out.map;
+    if (!ErfMap_Find(user_settings_map, "guild_folders", 13, &new_out) || new_out.tag != ErfTag_Arr) {
+        return;
+    }
 
-            if (ErfMap_Find(&guild_folder, "guild_ids", 9, &new_out) && new_out.tag == ErfTag_Arr) {
-                ErfArr guild_ids = new_out.arr;
-                for (i32 j = 0; j < guild_ids.count; ++j) {
-                    ErfArr_At(&guild_ids, &new_out, j);
-                    if (new_out.tag == ErfTag_Uint64 && g_guild_count < ArrayCount(g_guilds)) {
-                        u64 guild_id              = new_out.uint64;
-                        g_guilds[g_guild_count++] = guild_id;
-                    }
+    ErfArr arr          = new_out.arr;
+    ErfMap guild_folder = { 0 };
+    g_guild_count       = 0;
+    for (i32 i = 0; i < arr.count; ++i) {
+        ErfArr_At(&arr, &new_out, i);
+        if (new_out.tag != ErfTag_Map) {
+            continue;
+        }
+        guild_folder = new_out.map;
+
+        if (ErfMap_Find(&guild_folder, "guild_ids", 9, &new_out) && new_out.tag == ErfTag_Arr) {
+            ErfArr guild_ids = new_out.arr;
+            for (i32 j = 0; j < guild_ids.count; ++j) {
+                ErfArr_At(&guild_ids, &new_out, j);
+                if (new_out.tag == ErfTag_Uint64 && g_guild_count < ArrayCount(g_guilds)) {
+                    u64 guild_id              = new_out.uint64;
+                    g_guilds[g_guild_count++] = guild_id;
                 }
             }
         }
     }
-
-    return result;
 }
