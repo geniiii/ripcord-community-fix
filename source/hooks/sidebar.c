@@ -110,7 +110,7 @@ static DISCLIENTIMPL_PROCESSGATEWAYMESSAGE(DisClientImpl_ProcessGatewayMessageHo
         // NOTE(geni): Ripcord obviously doesn't map CHANNEL_SYNC for us
         case GatewayEvent_Unknown: {
             String8 event = {
-                .cstr = t.str.data,
+                .cstr = (char*) t.str.data,
                 .size = (u64) t.str.length,
             };
             if (S8_Equals(event, S8Lit("CHANNEL_SYNC"))) {
