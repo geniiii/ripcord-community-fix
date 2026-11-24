@@ -49,51 +49,86 @@ static u32 Hook_Init() {
         }
     }
 
-    // NOTE(geni): Patch IP discovery packet sizes
-    Hook_PatchByte(rip_base, 0xDE8D8, 74);
-    Hook_PatchByte(rip_base, 0xDE8EA, 8);
-    Hook_PatchByte(rip_base, 0xDE90C, 8);
-    Hook_PatchByte(rip_base, 0xDE936, 72);
+    //~ IP discovery
+    {
+        // NOTE(geni): Patch IP discovery packet sizes
+        Hook_PatchByte(rip_base, 0xDE8D8, 74);
+        Hook_PatchByte(rip_base, 0xDE8EA, 8);
+        Hook_PatchByte(rip_base, 0xDE90C, 8);
+        Hook_PatchByte(rip_base, 0xDE936, 72);
+    }
 
-    // NOTE(geni): Set voice gateway version to 8
-    Hook_PatchByte(rip_base, 0x3CF0B4, '8');
-    // NOTE(geni): Patch "speaking" field check for v4 and later of voice gateway
-    // NOTE(geni): Check for double instead of bool for "speaking" field
-    Hook_PatchByte(rip_base, 0xE6C5C, 0x83);
-    Hook_PatchByte(rip_base, 0xE6C5C + 1, 0xF8);
-    Hook_PatchByte(rip_base, 0xE6C5C + 2, 0x02);
-    // NOTE(geni): Call QJsonValue::toInt() instead of QJsonValue::toBool()
-    Hook_PatchByte(rip_base, 0xE6C67 + 2, 0x03);
-    Hook_PatchByte(rip_base, 0xE6C67 + 3, 0x76);
+    //~ Voice gateway
+    {
+        // NOTE(geni): Set voice gateway version to 8
+        Hook_PatchByte(rip_base, 0x3CF0B4, '8');
+        // NOTE(geni): Patch "speaking" field check for v4 and later of voice gateway
+        // NOTE(geni): Check for double instead of bool for "speaking" field
+        Hook_PatchByte(rip_base, 0xE6C5C, 0x83);
+        Hook_PatchByte(rip_base, 0xE6C5C + 1, 0xF8);
+        Hook_PatchByte(rip_base, 0xE6C5C + 2, 0x02);
+        // NOTE(geni): Call QJsonValue::toInt() instead of QJsonValue::toBool()
+        Hook_PatchByte(rip_base, 0xE6C67 + 2, 0x03);
+        Hook_PatchByte(rip_base, 0xE6C67 + 3, 0x76);
+    }
 
-    // NOTE(geni): Fixes image previews not loading. Thanks u130b8!
-    Hook_PatchString(rip_base, 0x3E63F8, S8Lit("cdn.discordapp.com/\0\0\0"));
+    //~ Image previews
+    {
+        // NOTE(geni): Fixes image previews not loading. Thanks u130b8!
+        Hook_PatchString(rip_base, 0x3E63F8, S8Lit("cdn.discordapp.com/\0\0\0"));
+    }
 
-    // NOTE(geni): Discard invalid map keys instead of aborting. Thanks @muffinlord on Discord!
-    Hook_PatchByte(rip_base, 0xB9BBF, 0xEB);
-    Hook_PatchByte(rip_base, 0xB9BC0, 0x80);
+    //~ Map keys
+    {
+        // NOTE(geni): Discard invalid map keys instead of aborting. Thanks @muffinlord on Discord!
+        Hook_PatchByte(rip_base, 0xB9BBF, 0xEB);
+        Hook_PatchByte(rip_base, 0xB9BC0, 0x80);
+    }
 
-    // NOTE(geni): Disable gateway port splitting
-    Hook_PatchByte(rip_base, 0xD677E, 0x10);
+    //~ Gateway
+    {
+        // NOTE(geni): Disable gateway port splitting
+        Hook_PatchByte(rip_base, 0xD677E, 0x10);
+    }
 
-    // NOTE(geni): Don't require a discriminator when editing mentions
-    Hook_PatchByte(rip_base, 0xEADD7, 0x90);
-    Hook_PatchByte(rip_base, 0xEADD8, 0x90);
-    // NOTE(geni): Don't append '#' to unresolved mentions, otherwise "@everyone" gets sent as "@everyone#"
-    Hook_PatchByte(rip_base, 0xEA595, 0xEB);
-    Hook_PatchByte(rip_base, 0xEA596, 0x0B);
+    // NOTE(geni): Some of these are NOPs, others are small relative jumps when they could've been a bunch of NOPs... whatever.
+    //             I just picked whatever felt nicer.
 
-    // NOTE(geni): Evil hack to autocomplete mentions as just the username by commenting out discrim in the query
-    Hook_PatchString(rip_base, 0x3DF915, S8Lit("(user.name)--"));
-    Hook_PatchString(rip_base, 0x3DFA48, S8Lit("(user.name)--"));
-    Hook_PatchString(rip_base, 0x3DFB61, S8Lit("(user.name)--"));
-    Hook_PatchString(rip_base, 0x3DFC65, S8Lit("(user.name)--"));
-    Hook_PatchString(rip_base, 0x3DFDE8, S8Lit("(user.name)--"));
-    Hook_PatchString(rip_base, 0x3DFF41, S8Lit("(user.name)--"));
+    //~ Mentions
+    {
+        // NOTE(geni): Don't require a discriminator when editing mentions
+        Hook_PatchByte(rip_base, 0xEADD7, 0x90);
+        Hook_PatchByte(rip_base, 0xEADD8, 0x90);
+        // NOTE(geni): Don't append '#' to unresolved mentions, otherwise "@everyone" gets sent as "@everyone#"
+        Hook_PatchByte(rip_base, 0xEA595, 0xEB);
+        Hook_PatchByte(rip_base, 0xEA596, 0x0B);
 
-    // NOTE(geni): Don't add "Accept Invite..." to the Discord menu
-    for (u32 i = 0; i < 6; ++i) {
-        Hook_PatchByte(rip_base, 0x14C7D0 + i, 0x90);
+        // NOTE(geni): Evil hack to autocomplete mentions as just the username by commenting out discrim in the query
+        Hook_PatchString(rip_base, 0x3DF915, S8Lit("(user.name)--"));
+        Hook_PatchString(rip_base, 0x3DFA48, S8Lit("(user.name)--"));
+        Hook_PatchString(rip_base, 0x3DFB61, S8Lit("(user.name)--"));
+        Hook_PatchString(rip_base, 0x3DFC65, S8Lit("(user.name)--"));
+        Hook_PatchString(rip_base, 0x3DFDE8, S8Lit("(user.name)--"));
+        Hook_PatchString(rip_base, 0x3DFF41, S8Lit("(user.name)--"));
+    }
+
+    //~ Discriminator
+    {
+        // NOTE(geni): Don't show the discriminator in the account details pane
+        Hook_PatchByte(rip_base, 0x196740, 0xEB);
+        Hook_PatchByte(rip_base, 0x196741, 0x0B);
+        // NOTE(geni): Don't add discriminator to account details pane
+        for (u32 i = 0; i < 5; ++i) {
+            Hook_PatchByte(rip_base, 0x1950DE + i, 0x90);
+        }
+    }
+
+    //~ UI
+    {
+        // NOTE(geni): Don't add "Accept Invite..." to the Discord menu
+        for (u32 i = 0; i < 6; ++i) {
+            Hook_PatchByte(rip_base, 0x14C7D0 + i, 0x90);
+        }
     }
 
     HMODULE qt5core       = GetModuleHandleA("Qt5Core.dll");
@@ -108,12 +143,15 @@ static u32 Hook_Init() {
 #undef QT_FN
 #undef QT_HOOK
 
-    // NOTE(geni): Match mentions without discrim
-    QString mention_re = {
-        .d = QString_FromAsciiHelper("\\@([\\w.]{1,32})", -1),
-    };
-    QRegularExpression_SetPattern(rip_base + 0x6604D8, &mention_re);
-    QString_Destructor(&mention_re);
+    //~ Mentions
+    {
+        // NOTE(geni): Match mentions without discrim
+        QString mention_re = {
+            .d = QString_FromAsciiHelper("\\@([\\w.]{1,32})", -1),
+        };
+        QRegularExpression_SetPattern(rip_base + 0x6604D8, &mention_re);
+        QString_Destructor(&mention_re);
+    }
 
     Client_Init();
 
