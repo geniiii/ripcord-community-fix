@@ -1,31 +1,19 @@
-# ripcord-community-fix
+# Ripcord Community Fix
 
 _(formerly known as `ripcord-audio-hook`)_
 
-Fixes Ripcord:
+A community-made patch to keep Ripcord 0.4.29 alive.
 
-1. not connecting <sup>due to the ETF parser aborting upon discovering invalid/unhandled map keys</sup>
-2. not connecting <sup>due to the ETF parser not supporting term type `SMALL_TUPLE_EXT`</sup>
-3. lacking support for DAVE E2EE and new encryption modes, causing it to fail to connect to voice channels
-4. having garbled audio in voice channels <sup>due to reading RTP header extensions larger than 8 bytes as voice data</sup>
-5. getting stuck on "Routing..." when attempting to join voice channels <sup>due to sending and receiving an old (?) version of the IP discovery packet</sup>
-6. failing to connect to voice channels <sup>due to creating malformed WebSocket gateway URIs</sup>
-7. not ordering servers in the sidebar correctly <sup>due to the addition of folders</sup>
-8. not loading image previews
-9. not showing "Stage" voice channels  
-   _(This is accomplished by making Ripcord think stages are regular voice channels. This means that there is no way to become a speaker, and no way to differentiate a stage from a regular voice channel)_
+> [!IMPORTANT]
+> **Looking for install instructions or downloads?**
+> Go to the **[project page](https://geni.site/projects/ripcord-community-fix/)**.
 
 Supports Ripcord 0.4.29 on Windows.  
-[Partially supports Ripcord 0.4.29 on Linux, albeit with limited testing.](https://github.com/geniiii/ripcord-audio-hook/tree/linux)
-
-## Usage
-
-Download the DLL file from [the Releases page](https://github.com/geniiii/ripcord-audio-hook/releases) and place it in your Ripcord directory, or watch the video below if you don't understand:  
-<a href="https://www.youtube.com/watch?v=MY1-YvD1vzg"><img src="https://github.com/user-attachments/assets/ff60fb35-733c-4faf-a681-ff84ca458fa7" width=640px></a>
+[Partially supports Ripcord 0.4.29 on Linux.](https://github.com/geniiii/ripcord-audio-hook/tree/linux)
 
 ## Building
 
-### If you don't know what you're doing, look at the Usage section above instead.
+### If you don't know what you're doing, see the [project page](https://geni.site/projects/ripcord-community-fix/) instead.
 
 1. Install Visual Studio 2019 or newer with the C++ development tools
 2. `git submodule update --init --recursive`
@@ -38,4 +26,7 @@ Download the DLL file from [the Releases page](https://github.com/geniiii/ripcor
 [@muffinl0rd](https://github.com/muffinl0rd) for bypassing ETF parser abortion  
 [@septixxx](https://github.com/septixxx) for providing (LLM-assisted) PoC fixes for some issues with the DAVE implementation
 
-LLMs have been used to assist with the DAVE implementation; for example, to look for bugs and divergence from the DAVE whitepaper. Regardless, this project is _not_ "AI slop", and all other code is written without AI assistance.
+## Contributing
+
+Though AI assistance is permitted, "vibecoded" contributions will **not** be accepted. If code is AI-assisted, the author must, at the very least, be able to explain how it works. Code that requires heavy refactoring on my part (otherwise known as AI slop) will probably not be accepted.
+
