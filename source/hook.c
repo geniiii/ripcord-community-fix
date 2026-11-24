@@ -52,10 +52,10 @@ static u32 Hook_Init() {
     //~ IP discovery
     {
         // NOTE(geni): Patch IP discovery packet sizes
-        Hook_PatchByte(rip_base, 0xDE8D8, 74);
-        Hook_PatchByte(rip_base, 0xDE8EA, 8);
-        Hook_PatchByte(rip_base, 0xDE90C, 8);
-        Hook_PatchByte(rip_base, 0xDE936, 72);
+        Hook_PatchByte(rip_base, 0xDE8D8, sizeof(DiscordIpDiscoveryPacket));
+        Hook_PatchByte(rip_base, 0xDE8EA, offsetof(DiscordIpDiscoveryPacket, address));
+        Hook_PatchByte(rip_base, 0xDE90C, offsetof(DiscordIpDiscoveryPacket, address));
+        Hook_PatchByte(rip_base, 0xDE936, offsetof(DiscordIpDiscoveryPacket, port));
     }
 
     //~ Voice gateway
