@@ -121,6 +121,13 @@ static u32 Hook_Init() {
         for (u32 i = 0; i < 5; ++i) {
             Hook_PatchByte(rip_base, 0x1950DE + i, 0x90);
         }
+        // NOTE(geni): Don't add discriminator and its spacing to the user banner
+        for (u32 i = 0; i < 6; ++i) {
+            Hook_PatchByte(rip_base, 0x14F2F6 + i, 0x90);
+        }
+        for (u32 i = 0; i < 6; ++i) {
+            Hook_PatchByte(rip_base, 0x14F304 + i, 0x90);
+        }
     }
 
     //~ UI
