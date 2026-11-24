@@ -74,7 +74,7 @@ typedef struct {
 static_assert(sizeof(QLatin1String) == 0x10);
 #define QLatin1StringLit(s) (QLatin1String) QLatin1StringComp(s)
 #define QLatin1StringComp(s) \
-    { .size = sizeof(s) - 1, .data = s }
+    { .size = sizeof s - 1, .data = s }
 
 typedef struct {
     void* d;

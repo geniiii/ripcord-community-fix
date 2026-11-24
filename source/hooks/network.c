@@ -3,7 +3,7 @@ static QUDPSOCKET_WRITEDATAGRAM(QUdpSocket_WriteDatagramHook) {
     //             See here: https://discord.com/developers/docs/topics/voice-connections#ip-discovery
     if (size == IP_DISCOVERY_LENGTH) {
         DiscordIpDiscoveryPacket* packet = (DiscordIpDiscoveryPacket*) data;
-        memcpy(packet->ssrc, data, sizeof(packet->ssrc));
+        memcpy(packet->ssrc, data, sizeof packet->ssrc);
         packet->header.type[0]   = 0;
         packet->header.type[1]   = IP_DISCOVERY_TYPE_REQUEST;
         packet->header.length[0] = 0;

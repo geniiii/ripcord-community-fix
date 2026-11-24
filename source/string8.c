@@ -10,7 +10,7 @@ typedef struct {
 
 #define S8Lit(s) (String8) S8LitComp(s)
 #define S8LitComp(s) \
-    { (u8*) (s), sizeof(s) - 1 }
+    { (u8*) (s), sizeof s - 1 }
 #define S8VArg(s) (i32)((s).size), ((s).cstr)
 
 static u32 S8_Equals(String8 a, String8 b) {

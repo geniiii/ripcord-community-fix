@@ -21,13 +21,13 @@ enum {
 #define QJsonPrivateObjectLength(count) (((count) << 1) | 1)
 #define QJsonPrivateArrayLength(count)  ((count) << 1)
 
-#define QJsonPrivate_Latin1String(s)             \
-    struct {                                     \
-        u16  length;                             \
-        char latin1[((sizeof(s) + 4) & ~3) - 2]; \
+#define QJsonPrivate_Latin1String(s)            \
+    struct {                                    \
+        u16  length;                            \
+        char latin1[((sizeof s + 4) & ~3) - 2]; \
     }
 #define QJsonPrivateLatin1String(s) \
-    { .length = sizeof(s) - 1, .latin1 = s }
+    { .length = sizeof s - 1, .latin1 = s }
 
 #define PluginMetaDataOffset(object, field) (offsetof(PluginMetaData, object.field) - offsetof(PluginMetaData, object))
 
@@ -95,7 +95,7 @@ global const PluginMetaData g_plugin_metadata = {
     .header = {.tag = QJsonDocument_BinaryFormatTag, .version = 1},
     .root   = {
         .base = {
-            .size         = sizeof(g_plugin_metadata.root),
+            .size         = sizeof g_plugin_metadata.root,
             .length       = QJsonPrivateObjectLength(5),
             .table_offset = PluginMetaDataOffset(root, table),
         },
@@ -122,7 +122,7 @@ global const PluginMetaData g_plugin_metadata = {
             .key   = QJsonPrivateLatin1String("MetaData"),
             .data  = {
                 .base = {
-                    .size         = sizeof(g_plugin_metadata.root.metadata.data),
+                    .size         = sizeof g_plugin_metadata.root.metadata.data,
                     .length       = QJsonPrivateObjectLength(1),
                     .table_offset = PluginMetaDataOffset(root.metadata.data, table),
                 },
@@ -131,7 +131,7 @@ global const PluginMetaData g_plugin_metadata = {
                     .key   = QJsonPrivateLatin1String("Keys"),
                     .data  = {
                         .base = {
-                            .size         = sizeof(g_plugin_metadata.root.metadata.data.keys.data),
+                            .size         = sizeof g_plugin_metadata.root.metadata.data.keys.data,
                             .length       = QJsonPrivateArrayLength(1),
                             .table_offset = PluginMetaDataOffset(root.metadata.data.keys.data, table),
                         },
