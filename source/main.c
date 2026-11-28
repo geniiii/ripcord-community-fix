@@ -61,6 +61,8 @@ __declspec(dllexport) void* qt_plugin_instance(void) {
 
     if (Hook_Init()) {
         Update_StartCheck();
+        voice_line_init();
+        ss_ui_init();
     } else {
         Log_Error("Failed to load hooks.");
     }

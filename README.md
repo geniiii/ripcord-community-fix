@@ -17,7 +17,8 @@ Supports Ripcord 0.4.29 on Windows.
 
 1. Install Visual Studio 2019 or newer with the C++ development tools
 2. `git submodule update --init --recursive`
-3. Run `build.bat`
+3. Install Qt 5.9.x (the version Ripcord ships, `msvc2017_64`) and set `QT5_DIR` to its folder, e.g. `C:\Qt\5.9.7\msvc2017_64`
+4. Run `build.bat`
 
 ## Credits
 
