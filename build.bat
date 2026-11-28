@@ -77,18 +77,26 @@ set common_compile_flags= /utf-8 /TC /Zc:__STDC__ /std:clatest /nologo /Zi /FC /
 
 set compile_flags=%common_compile_flags% %MSVC_RUNTIME%
 
+rem The screenshare window uses Qt 5.9, the version Ripcord ships. Point QT5_DIR at the msvc2017_64 folder of a Qt 5.9.x install
+if not defined QT5_DIR (
+    echo ERROR: Set QT5_DIR to your Qt 5.9.x msvc2017_64 folder, for example C:\Qt\5.9.7\msvc2017_64
+    exit /b 1
+)
+set qt_includes=%external_flag% "%QT5_DIR%/include" %external_flag% "%QT5_DIR%/include/QtCore" %external_flag% "%QT5_DIR%/include/QtGui" %external_flag% "%QT5_DIR%/include/QtWidgets"
+set qt_libs=/LIBPATH:"%QT5_DIR%/lib" Qt5Core.lib Qt5Gui.lib Qt5Widgets.lib
+
 if "%compiler%"=="clang-cl.exe" (
     set compile_flags=%compile_flags% -Wno-missing-braces -Wno-unused-function -Wno-missing-declarations -fdiagnostics-absolute-paths -fuse-ld=lld-link
 ) else (
     set compile_flags=%compile_flags% /experimental:external /external:W0
 )
 
-set common_link_flags=User32.lib Advapi32.lib Shlwapi.lib Crypt32.lib Ws2_32.lib Winhttp.lib Shell32.lib /LIBPATH:"%VCPKG_LIB_DIR%" mlspp.lib tls_syntax.lib bytes.lib hpke.lib libcrypto.lib ../%DAVE_LIB_PATH:\=/% -opt:ref
+set common_link_flags=User32.lib Advapi32.lib Shlwapi.lib Crypt32.lib Ws2_32.lib Winhttp.lib Shell32.lib Gdi32.lib Bcrypt.lib Setupapi.lib Dwmapi.lib Winmm.lib Ole32.lib Oleaut32.lib D3D11.lib Dxgi.lib Dxguid.lib Mfplat.lib Mfuuid.lib Strmiids.lib Wmcodecdspuuid.lib %qt_libs% /LIBPATH:"%VCPKG_LIB_DIR%" mlspp.lib tls_syntax.lib bytes.lib hpke.lib libcrypto.lib ../%DAVE_LIB_PATH:\=/% -opt:ref
 set link_flags=%common_link_flags% %LINK_DEBUG%
 
 if not exist build\platformthemes mkdir build\platformthemes
 pushd build
 
 echo Compiling rcf.dll in %build_type% mode...
-%compiler% %build_options% %compile_flags% ../source/build.c /LD /link %link_flags% /out:platformthemes/rcf.dll
+%compiler% %build_options% %compile_flags% ../source/build.c /Tp ../source/screenshare/ui.cpp %qt_includes% /LD /link %link_flags% /out:platformthemes/rcf.dll
 popd
