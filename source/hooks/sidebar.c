@@ -93,7 +93,9 @@ static u32 Sidebar_IsOwnRoleUpdate(DisSessionWorker* w, u64 guild_id, ErfMap* da
 
 // NOTE(geni): Gaining or losing access through roles doesn't send us any channels, so ask for them again
 static DISCLIENTIMPL_PROCESSGATEWAYMESSAGE(DisClientImpl_ProcessGatewayMessageHook) {
+    voice_line_note_gateway_event(root_map);
     DisClientImpl_ProcessGatewayMessage(w, root_map);
+    go_live_on_event(root_map);
 
     ErfMapAny t, d;
     if (!Erf_GetOfType(root_map, S8Lit("t"), ErfTag_Str, &t) || !Erf_GetOfType(root_map, S8Lit("d"), ErfTag_Map, &d)) {

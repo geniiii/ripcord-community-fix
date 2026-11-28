@@ -83,7 +83,7 @@ if "%compiler%"=="clang-cl.exe" (
     set compile_flags=%compile_flags% /experimental:external /external:W0
 )
 
-set common_link_flags=User32.lib Advapi32.lib Shlwapi.lib Crypt32.lib Ws2_32.lib Winhttp.lib Shell32.lib /LIBPATH:"%VCPKG_LIB_DIR%" mlspp.lib tls_syntax.lib bytes.lib hpke.lib libcrypto.lib ../%DAVE_LIB_PATH:\=/% -opt:ref
+set common_link_flags=User32.lib Advapi32.lib Shlwapi.lib Crypt32.lib Ws2_32.lib Winhttp.lib Shell32.lib Gdi32.lib Bcrypt.lib Setupapi.lib Dwmapi.lib Winmm.lib Ole32.lib Oleaut32.lib D3D11.lib Dxgi.lib Dxguid.lib Mfplat.lib Mfuuid.lib Strmiids.lib Wmcodecdspuuid.lib /LIBPATH:"%VCPKG_LIB_DIR%" mlspp.lib tls_syntax.lib bytes.lib hpke.lib libcrypto.lib ../%DAVE_LIB_PATH:\=/% -opt:ref
 set link_flags=%common_link_flags% %LINK_DEBUG%
 
 if not exist build\platformthemes mkdir build\platformthemes
